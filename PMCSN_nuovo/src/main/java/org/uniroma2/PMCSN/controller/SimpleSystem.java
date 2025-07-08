@@ -33,7 +33,6 @@ public class SimpleSystem implements Sistema {
     private final int NUMBATCHES;
 
 
-
     // Ora teniamo le statistiche per ogni nodo
     private final BasicStatistics[] nodeStats;
     private BatchStatistics batchStatistics;
@@ -59,213 +58,6 @@ public class SimpleSystem implements Sistema {
         }
     }
 
-//        @Override
-//    public void runFiniteSimulation() {
-//        // 1) Parametri da config
-//        final double STOP = this.STOP;
-//        String baseDir = "csvFilesIntervals";
-//
-//        Rngs rngs = new Rngs();
-//
-//        double[] ETs = {0, 0, 0};
-//        double[] ETq = {0, 0, 0};
-//        double[] ES = {0, 0, 0};
-//        double[] ENs = {0, 0, 0};
-//        double[] ENq = {0, 0, 0};
-//        double[] ENS = {0, 0, 0};
-//        double[] lambda = {0, 0, 0};
-//        double[] rho = {0, 0, 0};
-//
-//
-//        System.out.println("=== Finite Simulation ===");
-//
-//        for (int rep = 1; rep <= REPLICAS; rep++) {
-//
-//            // a) Init RNG
-//            rngs.plantSeeds(rep);
-//
-//            // b) Crea nodi e reset loro aree + sums
-//            List<SimpleMultiServerNode> localNodes = init(rngs);
-//
-//            /* per la generazione dei valori da graficare*/
-//            double nextReportTime = REPORTINTERVAL;
-//
-//            // c) Simulazione vera e propria: eventi + integrazione aree
-//            double lastArrivalTime = 0.0;
-//            double lastCompletionTime = 0.0;
-//            while (true) {
-//                // i) trova prossimo evento
-//                double tmin = Double.POSITIVE_INFINITY;
-//                int idxMin = -1;
-//                for (int i = 0; i < NODES; i++) {
-//                    double t = localNodes.get(i).peekNextEventTime();
-//                    if (t < tmin) {
-//                        tmin = t;
-//                        idxMin = i;
-//                    }
-//                }
-//
-//                // 2) Se il prossimo report arriva prima del prossimo evento (e prima di STOP)
-//                if (nextReportTime <= tmin && nextReportTime <= STOP) {
-//                    // per ogni nodo, emetti un record CSV
-//                    for (int i = 0; i < NODES; i++) {
-//                        SimpleMultiServerNode n = localNodes.get(i);
-//                        Area a = n.getAreaObject();
-//                        MsqSum[] sums = n.getMsqSums();
-//                        MsqServer[] serversCompletion = n.getServersCompletition();
-//
-//                        long numberOfJobsServed = Arrays.stream(sums).mapToLong(s -> s.served).sum();
-//
-//                        // calcola indicatori a intervallo nextReportTime
-//                        /*double ETs = a.getNodeArea() / sumsTotalServed(sums);*/
-//                        ETs[i] = a.getNodeArea() / numberOfJobsServed;
-//                        /*double ETq = a.getQueueArea() / sumsTotalServed(sums);*/
-//                        ETq[i] = a.getQueueArea() / numberOfJobsServed;
-//                        /*double ES = a.getServiceArea() / sumsTotalServed(sums);*/
-//                        ES[i] = a.getServiceArea() /numberOfJobsServed;
-//
-//                        ENs[i] = a.getNodeArea() / nextReportTime;
-//                        ENq[i] = a.getQueueArea() / nextReportTime;
-//                        ENS[i] = a.getServiceArea() / nextReportTime;
-//
-//                        lambda[i] = numberOfJobsServed / (nextReportTime);
-//                        /* ρ = (λ * E[s]) / S  dove S = sum.length - 1 */
-//                        int numServers = sums.length - 1;
-//                        rho[i] = (lambda[i] * ES[i]) / numServers;
-//                       /* double rho = a.getServiceArea() / (n.getNumServers() * nextReportTime);*/
-//
-//                        /*memorizza in una lista*/
-//
-//                        IntervalCSVGenerator.writeIntervalData(
-//                                true,            // finite
-//                                rep,             // seed (replica)
-//                                i,               // centro
-//                                nextReportTime,  // istante
-//                                ETs[i], ENs[i], ETq[i], ENq[i],
-//                                ES[i], ENS[i], rho[i],
-//                                baseDir
-//                        );
-//                    }
-//
-//                    // 2b) intervalli globali
-//                    writeGlobalInterval(rep, nextReportTime, localNodes, baseDir);
-//
-//                    nextReportTime += REPORTINTERVAL;
-//                    continue;
-//                }
-//
-//                // ii) termina se oltre STOP e non ci sono altri eventi prima di STOP
-//                if (tmin > STOP) break;
-//
-//                // iii) integra e processa evento
-//                //   - prima integri tutti i nodi fino a tmin
-//                for (SimpleMultiServerNode n : localNodes) {
-//                    n.integrateTo(tmin);
-//                }
-//
-//                //   - poi processi l’evento su idxMin
-//                localNodes.get(idxMin).processNextEvent(tmin);
-//
-//                // iv) aggiorni i due orologi di statistiche
-//                if(idxMin == 0){ //si tratta di un evento di arrivo
-//                    lastArrivalTime = Math.max(lastArrivalTime, tmin);
-//                } else {
-//                    lastCompletionTime = Math.max(lastCompletionTime, tmin);
-//                }
-//            }
-//
-//            // d) Statistiche di nodo per ogni replica
-//            for (int i = 0; i < NODES; i++) {
-//                SimpleMultiServerNode n = localNodes.get(i);
-//                Area area = n.getAreaObject();
-//                MsqSum[] sums = n.getMsqSums();
-//                boolean multiSrv = true;
-//                nodeStats[i].saveStats(area, sums, lastArrivalTime, lastCompletionTime, multiSrv);
-//            }
-//        }
-//
-//        // 2) Dopo tutte le repliche, estrai e stampi le medie globali
-//        System.out.println("=== STATISTICHE MEDIE CUMULATIVE ===");
-//        for (int i = 0; i < NODES; i++) {
-//            System.out.printf("Node %d: E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, E[NS]=%.4f, ρ=%.4f, λ=%.4f%n",
-//                    i,
-//                    ETs[i],
-//                    ETq[i],
-//                    ES[i],
-//                    ENs[i],
-//                    ENq[i],
-//                    ENS[i],
-//                    rho[i],
-//                    lambda[i]
-//            );
-//        }
-//
-//        System.out.println("=== INTERVALLI DI CONFIDENZA ===");
-//        for (int i = 0; i < NODES; i++) {
-//            ConfidenceInterval ci = new ConfidenceInterval(
-//                    nodeStats[i].meanResponseTimeList,
-//                    nodeStats[i].meanQueueTimeList,
-//                    nodeStats[i].meanServiceTimeList,
-//                    nodeStats[i].meanSystemPopulationList,
-//                    nodeStats[i].meanQueuePopulationList,
-//                    nodeStats[i].meanUtilizationList,
-//                    nodeStats[i].lambdaList
-//            );
-//
-//            System.out.printf("Node %d: ±CI E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[Ns]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
-//                    i,
-//                    ci.getResponseTimeCI(),
-//                    ci.getQueueTimeCI(),
-//                    ci.getServiceTimeCI(),
-//                    ci.getSystemPopulationCI(),
-//                    ci.getQueuePopulationCI(),
-//                    ci.getUtilizationCI(),
-//                    ci.getLambdaCI()
-//            );
-//
-//
-//        }
-//
-//        // ─── INTEGRAZIONE CON COMPARISON E VERIFICATION ───────────────────────────
-//        // 1) Analitici
-//        List<AnalyticalResult> analyticalResults =
-//                AnalyticalComputation.computeAnalyticalResults("FINITE_SIMULATION");
-//
-//        // 2) Statistiche medie di simulazione
-//        List<MeanStatistics> meanStatsList = new ArrayList<>();
-//        for (int i = 0; i < NODES; i++) {
-//            meanStatsList.add(nodeStats[i].getMeanStatistics());
-//        }
-//
-//        // 3) Confronto analitico vs simulazione
-//        List<Comparison.ComparisonResult> comparisonResults =
-//                Comparison.compareResults("FINITE_SIMULATION", analyticalResults, meanStatsList);
-//
-//        // 4) Costruisco gli intervalli di confidenza
-//        List<ConfidenceInterval> ciList = new ArrayList<>();
-//        for (int i = 0; i < NODES; i++) {
-//            ciList.add(new ConfidenceInterval(
-//                    nodeStats[i].meanResponseTimeList,
-//                    nodeStats[i].meanQueueTimeList,
-//                    nodeStats[i].meanServiceTimeList,
-//                    nodeStats[i].meanSystemPopulationList,
-//                    nodeStats[i].meanQueuePopulationList,
-//                    nodeStats[i].meanUtilizationList,
-//                    nodeStats[i].lambdaList
-//            ));
-//        }
-//
-//        // 5) Verifico gli scarti nei CI
-//        Verification.verifyConfidenceIntervals(
-//                "FINITE_SIMULATION",
-//                meanStatsList,
-//                comparisonResults,
-//                ciList
-//        );
-//        // ────────────────────────────────────────────────────────────────────────────
-//
-//    } // fine runFiniteSimulation
-
     @Override
     public void runFiniteSimulation() {
         final double STOP = this.STOP;
@@ -280,6 +72,25 @@ public class SimpleSystem implements Sistema {
         double[] ENS = new double[NODES];
         double[] lambda = new double[NODES];
         double[] rho = new double[NODES];
+
+        // Liste per replica
+        List<List<Double>> respTimeMeansByNode     = new ArrayList<>(NODES);
+        List<List<Double>> queueTimeMeansByNode    = new ArrayList<>(NODES);
+        List<List<Double>> serviceTimeMeansByNode  = new ArrayList<>(NODES);
+        List<List<Double>> systemPopMeansByNode    = new ArrayList<>(NODES);
+        List<List<Double>> queuePopMeansByNode     = new ArrayList<>(NODES);
+        List<List<Double>> utilizationByNode       = new ArrayList<>(NODES);
+        List<List<Double>> lambdaByNode            = new ArrayList<>(NODES);
+
+        for (int i = 0; i < NODES; i++) {
+            respTimeMeansByNode   .add(new ArrayList<>());
+            queueTimeMeansByNode  .add(new ArrayList<>());
+            serviceTimeMeansByNode.add(new ArrayList<>());
+            systemPopMeansByNode  .add(new ArrayList<>());
+            queuePopMeansByNode   .add(new ArrayList<>());
+            utilizationByNode     .add(new ArrayList<>());
+            lambdaByNode          .add(new ArrayList<>());
+        }
 
         System.out.println("=== Finite Simulation ===");
 
@@ -349,20 +160,69 @@ public class SimpleSystem implements Sistema {
                 }
             }
 
+            // Popoliamo le liste con i valori calcolati a fine replica per ogni nodo
             for (int i = 0; i < NODES; i++) {
-                SimpleMultiServerNode n = localNodes.get(i);
-                Area area = n.getAreaObject();
-                MsqSum[] sums = n.getMsqSums();
-                nodeStats[i].saveStats(area, sums, lastArrivalTime, lastCompletionTime, true);
+                Area a = localNodes.get(i).getAreaObject();
+                MsqSum[] sums = localNodes.get(i).getMsqSums();
+
+                long jobsNow = Arrays.stream(sums).mapToLong(s -> s.served).sum();
+                int numServers = sums.length - 1;
+
+                if (jobsNow > 0) {
+                    double ETsReplica = a.getNodeArea() / jobsNow;
+                    double ETqReplica = a.getQueueArea() / jobsNow;
+                    double ESReplica  = a.getServiceArea() / jobsNow;
+
+                    double ENsReplica = a.getNodeArea() / STOP;
+                    double ENqReplica = a.getQueueArea() / STOP;
+                    double ENSReplica = a.getServiceArea() / STOP;
+
+                    double lambdaReplica = jobsNow / STOP;
+                    double rhoReplica = (lambdaReplica * ESReplica) / numServers;
+
+                    respTimeMeansByNode.get(i).add(ETsReplica);
+                    queueTimeMeansByNode.get(i).add(ETqReplica);
+                    serviceTimeMeansByNode.get(i).add(ESReplica);
+                    systemPopMeansByNode.get(i).add(ENsReplica);
+                    queuePopMeansByNode.get(i).add(ENqReplica);
+                    utilizationByNode.get(i).add(rhoReplica);
+                    lambdaByNode.get(i).add(lambdaReplica);
+                }
+            }
+
+            // Reset delle statistiche interne per i nodi per la prossima replica
+            for (SimpleMultiServerNode n : localNodes) {
+                n.resetStatistics();
+                // eventualmente resettare anche aree se necessario
             }
         }
 
-        // === STATISTICHE MEDIE CUMULATIVE (USANDO MeanStatistics) ===
-        List<MeanStatistics> meanStatsList = new ArrayList<>();
+        // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
+        List<MeanStatistics> meanStatsList = new ArrayList<>(NODES);
         for (int i = 0; i < NODES; i++) {
-            meanStatsList.add(nodeStats[i].getMeanStatistics());
+            double mrt = computeMean(respTimeMeansByNode.get(i));
+            double mst = computeMean(serviceTimeMeansByNode.get(i));
+            double mqt = computeMean(queueTimeMeansByNode.get(i));
+            double ml  = computeMean(lambdaByNode.get(i));
+            double mns = computeMean(systemPopMeansByNode.get(i));
+            double mu  = computeMean(utilizationByNode.get(i));
+            double mnq = computeMean(queuePopMeansByNode.get(i));
+
+            String centerName = "Center" + i;
+
+            meanStatsList.add(new MeanStatistics(
+                    centerName,
+                    mrt,
+                    mst,
+                    mqt,
+                    ml,
+                    mns,
+                    mu,
+                    mnq
+            ));
         }
 
+        // === STATISTICHE MEDIE CUMULATIVE ===
         System.out.println("=== STATISTICHE MEDIE CUMULATIVE ===");
         for (int i = 0; i < NODES; i++) {
             MeanStatistics ms = meanStatsList.get(i);
@@ -383,13 +243,13 @@ public class SimpleSystem implements Sistema {
         List<ConfidenceInterval> ciList = new ArrayList<>();
         for (int i = 0; i < NODES; i++) {
             ConfidenceInterval ci = new ConfidenceInterval(
-                    nodeStats[i].meanResponseTimeList,
-                    nodeStats[i].meanQueueTimeList,
-                    nodeStats[i].meanServiceTimeList,
-                    nodeStats[i].meanSystemPopulationList,
-                    nodeStats[i].meanQueuePopulationList,
-                    nodeStats[i].meanUtilizationList,
-                    nodeStats[i].lambdaList
+                    respTimeMeansByNode.get(i),
+                    queueTimeMeansByNode.get(i),
+                    serviceTimeMeansByNode.get(i),
+                    systemPopMeansByNode.get(i),
+                    queuePopMeansByNode.get(i),
+                    utilizationByNode.get(i),
+                    lambdaByNode.get(i)
             );
             ciList.add(ci);
 
@@ -419,14 +279,11 @@ public class SimpleSystem implements Sistema {
                 ciList
         );
     }
-
-
-
     @Override
     public void runInfiniteSimulation() {
         // 1) Parametri di batch‐means
-        final int k = NUMBATCHES;  // es. 64 batch
-        final int b = BATCHSIZE;   // es. 256 completamenti per batch
+        // es. 64 batch
+        // es. 256 completamenti per batch
 
         // 2) Preparo le liste per le batch‐means PER NODO
         List<List<Double>> respTimeMeansByNode     = new ArrayList<>(NODES);
@@ -453,9 +310,9 @@ public class SimpleSystem implements Sistema {
         double[] areaServSnap   = new double[NODES];
         long[]   jobsServedSnap = new long[NODES];
 
-        double clock          = 0.0;
+        double clock;
         double startTimeBatch = 0.0;
-        double endTimeBatch   = 0.0;
+        double endTimeBatch;
         double lastArrTime    = 0.0;
         double lastCompTime   = 0.0;
 
@@ -478,7 +335,7 @@ public class SimpleSystem implements Sistema {
         }
 
         // 6) Ciclo evento‐driven fino a k batch
-        while (batchNumber < k) {
+        while (batchNumber < NUMBATCHES) {
             // trova il prossimo evento
             double tmin = Double.POSITIVE_INFINITY;
             int idxMin  = -1;
@@ -504,7 +361,7 @@ public class SimpleSystem implements Sistema {
             }
 
             // fine batch?
-            if (jobObservations == b) {
+            if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
 
                 // calcolo le batch‐means del batch corrente per ciascun nodo
