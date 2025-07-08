@@ -187,6 +187,21 @@ public class RideSharingMultiServerNodeSimple implements Node {
     @Override public MsqServer[] getServersCompletition() { return serversCompletion; }
 
     @Override
+    public void resetStatistics() {
+        // reset delle aree
+        areaCollector.reset();
+
+        // reset dei sum statistici
+        if (sum != null) {
+            for (MsqSum sum : sum) {
+                if (sum != null) {
+                    sum.reset();
+                }
+            }
+        }
+    }
+
+    @Override
     public void resetState() {
         numberJobInSystem = 0;
         clock.current = clock.next = 0.0;

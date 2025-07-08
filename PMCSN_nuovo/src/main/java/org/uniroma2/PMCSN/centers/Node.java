@@ -20,4 +20,5 @@ public interface Node {
     void resetState();
     double getUtilization();
     MsqServer[] getServersCompletition();
+    void resetStatistics();
 }

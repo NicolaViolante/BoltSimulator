@@ -33,7 +33,7 @@ public class SimpleMultiServerNode implements Node {
     private int   numberJobInSystem = 0; /*numero di job attualmente nel centro, sia in coda che in servizio*/
     private double arrivalTime = 0.0;
     int numberOfServersInTheCenter; /*numero di servers nel centro*/
-    private double lastArrivalTimeInBatch = 0.0;
+    private double lastArrivalTimeInBatch;
 
 
     // parametri da config

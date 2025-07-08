@@ -3,6 +3,20 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="/csvFiles/FINITE_SIMULATION/analyticalResults/analyticalResults.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/csvFiles/FINITE_SIMULATION/comparison/comparison.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/csvFiles/FINITE_SIMULATION/verification/verification.csv">
           <value>
             <Attribute>
@@ -11,6 +25,13 @@
           </value>
         </entry>
         <entry key="/csvFilesIntervals/finite_interval/center0.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/csvFilesIntervals/finite_interval/center1.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

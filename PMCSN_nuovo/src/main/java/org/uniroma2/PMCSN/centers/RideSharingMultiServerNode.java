@@ -7,6 +7,7 @@ import org.uniroma2.PMCSN.model.*;
 import org.uniroma2.PMCSN.utils.Distrs;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class RideSharingMultiServerNode implements Node {
@@ -25,7 +26,7 @@ public class RideSharingMultiServerNode implements Node {
 
     private int numberJobInSystem = 0;
     private final int numberJobsProcessed = 0;
-    private final int S;
+    private final int RIDESERVERS;
     private final int Ssmall;
     private final int Smedium;
     private final int Slarge;
@@ -51,12 +52,12 @@ public class RideSharingMultiServerNode implements Node {
         Ssmall = Integer.parseInt(srv[0].trim());
         Smedium = Integer.parseInt(srv[1].trim());
         Slarge = Integer.parseInt(srv[2].trim());
-        S = config.getInt("simulation", "rideServers");
+        RIDESERVERS = config.getInt("simulation", "rideServers");
 
-        sum = new MsqSum[S + 1];
-        event = new ArrayList<>(S + 1);
+        sum = new MsqSum[RIDESERVERS + 1];
+        event = new ArrayList<>(RIDESERVERS + 1);
 
-        for (int i = 0; i <= S; i++) {
+        for (int i = 0; i <= RIDESERVERS; i++) {
 
             MsqEvent ev = new MsqEvent();
 
@@ -79,7 +80,7 @@ public class RideSharingMultiServerNode implements Node {
     @Override
     public double peekNextEventTime() {
         double tmin = Double.POSITIVE_INFINITY;
-        for (int i = 0; i <= S; i++) {
+        for (int i = 0; i <= RIDESERVERS; i++) {
             MsqEvent ev = event.get(i);
             if (ev.x == 1 && ev.t < tmin) tmin = ev.t;
         }
@@ -90,7 +91,7 @@ public class RideSharingMultiServerNode implements Node {
     public int peekNextEventType() {
         int best = -1;
         double tmin = Double.POSITIVE_INFINITY;
-        for (int i = 0; i <= S; i++) {
+        for (int i = 0; i <= RIDESERVERS; i++) {
             MsqEvent ev = event.get(i);
             if (ev.x == 1 && ev.t < tmin) {
                 tmin = ev.t;
@@ -100,130 +101,104 @@ public class RideSharingMultiServerNode implements Node {
         return best;
     }
 
+    // Campo di classe:
+    private double nextMatchTime = Double.POSITIVE_INFINITY;
+
     @Override
     public int processNextEvent(double t) {
-
         int e = peekNextEventType();
         clock.current = t;
+        System.out.printf("[%.3f] processNextEvent: next event %s%n",
+                clock.current,
+                (e == ARRIVAL ? "ARRIVAL" : "DEPARTURE on server " + (e-1)));
 
         if (e == ARRIVAL) {
-            // 1) rischedula immediatamente evento di ARRIVAL fittizio come interrupt
-
+            // 1) ARRIVAL
             numberJobInSystem++;
+            System.out.printf("[%.3f] ARRIVAL: jobsInSystem=%d%n",
+                    clock.current, numberJobInSystem);
 
+            // Schedule next ARRIVAL
             MsqEvent arr = new MsqEvent();
             arr.t = distrs.getNextArrivalTimeRideSharing(rng, clock.current);
             arr.x = 1;
             arr.postiRichiesti = getNumPosti();
-
-            //impostiamo il nuovo evento di arrivo
             event.set(ARRIVAL, arr);
 
             rng.selectStream(2);
             double p = rng.random();
             if (p < P_EXIT) {
                 numberJobInSystem--;
+                System.out.printf("[%.3f] ARRIVAL lost%n", clock.current);
                 return -1;
             } else if (p < P_FEEDBACK) {
                 numberJobInSystem--;
+                System.out.printf("[%.3f] ARRIVAL feedback immediate%n", clock.current);
                 generateFeedback(arr);
-                return -1;
-            } else {
                 return -1;
             }
 
-            } else {
-            //caso del ridesharing
-            return -1;
+            // 2) Accumulo in coda
+            pendingArrivals.add(arr);
+            System.out.printf("[%.3f] queued: %d pending%n",
+                    clock.current, pendingArrivals.size());
+
+            // 3) Imposto finestra se prima
+            if (pendingArrivals.size() == 1) {
+                nextMatchTime = clock.current + TIME_WINDOW;
+                System.out.printf("[%.3f] nextMatchTime set to %.3f%n",
+                        clock.current, nextMatchTime);
+            }
+
+        } else {
+            // 4) DEPARTURE
+            int serverIdx = e - 1;
+            numberJobInSystem--;
+            sum[serverIdx].served++;
+            sum[serverIdx].service += event.get(e).svc;
+
+            System.out.printf("[%.3f] DEPARTURE from server %d, jobsInSystem=%d%n",
+                    clock.current, serverIdx, numberJobInSystem);
+
+            MsqEvent sEvent = event.get(e);
+            sEvent.x = 0;
+            sEvent.capacitaRimanente   = sEvent.capacita;
+            sEvent.numRichiesteServite = 0;
+            sEvent.postiRichiesti      = 0;
+
+            return serverIdx;
         }
+
+        // 5) Batch‑matching
+        if (clock.current >= nextMatchTime) {
+            System.out.printf("[%.3f] Batch matching start, pending=%d%n",
+                    clock.current, pendingArrivals.size());
+            while (true) {
+                int matched = findOne();
+                System.out.printf("[%.3f] findOne() -> %d%n",
+                        clock.current, matched);
+                if (matched == 0) {
+                    if (!pendingArrivals.isEmpty()) {
+                        MsqEvent toFb = pendingArrivals.removeFirst();
+                        System.out.printf("[%.3f] fallback of one request%n", clock.current);
+                        generateFeedback(toFb);
+                    }
+                    break;
+                }
+            }
+            nextMatchTime = Double.POSITIVE_INFINITY;
+            System.out.printf("[%.3f] Batch matching done%n", clock.current);
+        }
+
+        return -1;
     }
-
-//            // 2) genera batch di arrivi entro finestra
-//            while (true) {
-////                MsqEvent ev = new MsqEvent();
-////                ev.t = distrs.getNextArrivalTimeRideSharing(rng, clock.current);
-////                ev.x = 1;
-////                ev.postiRichiesti = getNumPosti();
-////                rng.selectStream(2);
-////                if (rng.random() < P_EXIT) continue;
-////                rng.selectStream(3);
-////                if (rng.random() < P_FEEDBACK) {
-////                    generateFeedback(ev);
-////                    continue;
-////                }
-//                pendingArrivals.add(ev);
-////                numberJobInSystem++;
-//                if (ev.t > clock.current + TIME_WINDOW) break;
-//            }
-//        } else {
-//            // DEPARTURE su server e
-//            MsqEvent srvEv = event.get(e);
-//            sum[e].service += srvEv.svc;
-//            sum[e].served += srvEv.numRichiesteServite;
-//            numberJobsProcessed += srvEv.numRichiesteServite;
-//            numberJobInSystem -= srvEv.numRichiesteServite;
-//
-//            // libera server
-//            srvEv.capacitaRimanente = srvEv.capacita;
-//            srvEv.numRichiesteServite = 0;
-//            srvEv.x = 0;
-//        }
-//
-//        // match non-FIFO: provo tutte le pending
-//        ListIterator<MsqEvent> it = pendingArrivals.listIterator();
-//        while (it.hasNext()) {
-//            MsqEvent req = it.next();
-//            int srv = findFreeServer(req);
-//            if (srv != -1) {
-//                it.remove();
-////                queueJobs = pendingArrivals.size();
-//            }
-//        }
-//
-//        return e;
-//    }
-//
-//    private int findFreeServer(MsqEvent ev) {
-//        boolean matched = false;
-//        int srv = -1;
-//        rng.selectStream(5);
-//        for (int i = 1; i <= S && !matched; i++) {
-//            MsqEvent s = event.get(i);
-//            if (s.x == 1 && s.capacitaRimanente >= ev.postiRichiesti && rng.random() < P_MATCH_BUSY) {
-//                double svc = distrs.getServiceTimeRideSharing(rng);
-//                s.t = clock.current + svc;
-//                s.svc = (s.svc * s.numRichiesteServite + svc) / (s.numRichiesteServite + 1);
-//                s.numRichiesteServite++;
-//                s.capacitaRimanente -= ev.postiRichiesti;
-//                srv = i;
-//                matched = true;
-//            }
-//        }
-//        if (!matched) {
-//            for (int i = 1; i <= S && !matched; i++) {
-//                MsqEvent s = event.get(i);
-//                if (s.x == 0 && s.capacitaRimanente >= ev.postiRichiesti && rng.random() < P_MATCH_IDLE) {
-//                    double svc = distrs.getServiceTimeRideSharing(rng);
-//                    s.t = clock.current + svc;
-//                    s.svc = (s.svc * s.numRichiesteServite + svc) / (s.numRichiesteServite + 1);
-//                    s.numRichiesteServite++;
-//                    s.capacitaRimanente -= ev.postiRichiesti;
-//                    s.x = 1;
-//                    srv = i;
-//                    matched = true;
-//                }
-//            }
-//        }
-//        return srv;
-
-//    }
 
     @Override
     public void integrateTo(double t) {
         if (t <= clock.current) return;
         double dt = t - clock.current;
         areaCollector.incNodeArea(dt * numberJobInSystem);
-        int busy = Math.min(numberJobInSystem, S);
+        int busy = Math.min(numberJobInSystem, RIDESERVERS);
         areaCollector.incServiceArea(dt * busy);
         if (numberJobInSystem > busy) areaCollector.incQueueArea(dt * (numberJobInSystem - busy));
         clock.current = t;
@@ -267,6 +242,23 @@ public class RideSharingMultiServerNode implements Node {
         return new MsqServer[0];
     }
 
+    @Override
+    public void resetStatistics() {
+
+        // reset delle aree
+        areaCollector.reset();
+
+        // reset dei sum statistici
+        if (sum != null) {
+            for (MsqSum sum : sum) {
+                if (sum != null) {
+                    sum.reset();
+                }
+            }
+        }
+
+    }
+
     public void generateFeedback(MsqEvent event) {
 
         int num_posti = event.postiRichiesti;
@@ -280,5 +272,77 @@ public class RideSharingMultiServerNode implements Node {
             centriTradizionali.get(2).generateArrival(event.t);
            //genera eventi di tipo 3
        }
+    }
+
+
+    public int findOne() {
+        if (pendingArrivals.isEmpty()) return 0;
+
+        // 1. Prendo la PRIMA richiesta in coda
+        MsqEvent firstReq = pendingArrivals.getFirst();
+
+        // 2. CERCO best‑fit tra i server *attivi*
+        int bestActive = -1;
+        double bestCapActive = -1;
+
+        rng.selectStream(3);
+        for (int i = 1; i <= RIDESERVERS; i++) {
+            if (event.get(i).x == 1
+                    && event.get(i).capacitaRimanente>= firstReq.postiRichiesti
+                    && rng.random() < P_MATCH_BUSY /*indica la probabilità che sto nel percorso giusto*/
+                    && event.get(i).capacitaRimanente > bestCapActive) {
+                bestCapActive = event.get(i).capacitaRimanente;
+                bestActive = i;
+            }
+        }
+
+        if (bestActive != -1) {
+            // 2.a Assegno *solo* la prima richiesta a questo server
+            assignToServer(bestActive, firstReq);
+            pendingArrivals.removeFirst();
+            return 1;
+        }
+
+        // 3. FALLBACK interno: best‑fit tra server *inattivi*
+        int bestIdle = -1; double bestCapIdle = -1;
+        rng.selectStream(4);
+        for (int i = 1; i <= RIDESERVERS; i++) {
+            if (event.get(i).x == 0
+                    && event.get(i).capacitaRimanente >= firstReq.postiRichiesti
+                    && rng.random() < P_MATCH_IDLE
+                    && event.get(i).capacitaRimanente > bestCapIdle) {
+                bestCapIdle = event.get(i).capacitaRimanente;
+                bestIdle = i;
+            }
+        }
+        if (bestIdle == -1) {
+            return 0;  // né attivi né inattivi hanno accettato
+        }
+
+        // 3.a Attivo il server e *accorpo* quante richieste posso
+        event.get(bestIdle).x = 1;
+        int totalMatched = 0;
+        Iterator<MsqEvent> it = pendingArrivals.iterator();
+        while (it.hasNext()) {
+            MsqEvent req = it.next();
+            if (req.postiRichiesti <= event.get(bestIdle).capacitaRimanente) {
+                assignToServer(bestIdle, req);
+                it.remove();
+                totalMatched++;
+                if (event.get(bestIdle).capacitaRimanente == 0) break;
+            }
+        }
+        return totalMatched; //totale di richieste matchate
+    }
+
+    // helper per aggiornare lo stato del server
+    private void assignToServer(int serverIdx, MsqEvent req) {
+        MsqEvent s = event.get(serverIdx);               // MsqEvent, non NodeServerStats
+        double svc = distrs.getServiceTimeRideSharing(rng);
+        s.t = clock.current + svc;
+        s.svc = (s.svc * s.numRichiesteServite + svc) / (s.numRichiesteServite + 1);
+        s.numRichiesteServite++;
+        s.capacitaRimanente -= req.postiRichiesti;       // nome campo corretto
+        s.postiRichiesti += req.postiRichiesti;
     }
 }
