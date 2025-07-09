@@ -6,10 +6,7 @@ import org.uniroma2.PMCSN.centers.RideSharingMultiServerNodeSimple;
 import org.uniroma2.PMCSN.configuration.ConfigurationManager;
 import org.uniroma2.PMCSN.libs.Rngs;
 import org.uniroma2.PMCSN.model.*;
-import org.uniroma2.PMCSN.utils.AnalyticalComputation;
-import org.uniroma2.PMCSN.utils.Comparison;
 import org.uniroma2.PMCSN.utils.IntervalCSVGenerator;
-import org.uniroma2.PMCSN.utils.Verification;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -61,12 +58,16 @@ public class RideSharingSystem implements Sistema {
         }
     }
 
-
     @Override
     public void runFiniteSimulation() {
         final double STOP = this.STOP;
         String baseDir = "csvFilesIntervals";
         Rngs rngs = new Rngs();
+
+        List<List<Long>> jobsProcessedByNode = new ArrayList<>(SIMPLE_NODES+RIDE_NODES);
+        for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
+            jobsProcessedByNode.add(new ArrayList<>());
+        }
 
         double[] ETs = new double[SIMPLE_NODES+RIDE_NODES];
         double[] ETq = new double[SIMPLE_NODES+RIDE_NODES];
@@ -183,6 +184,8 @@ public class RideSharingSystem implements Sistema {
                 MsqSum[] sums = localNodes.get(i).getMsqSums();
 
                 long jobsNow = Arrays.stream(sums).mapToLong(s -> s.served).sum();
+                jobsProcessedByNode.get(i).add(jobsNow);
+
                 int numServers = sums.length - 1;
 
                 if (jobsNow > 0) {
@@ -280,21 +283,18 @@ public class RideSharingSystem implements Sistema {
                     ci.getUtilizationCI(),
                     ci.getLambdaCI()
             );
+
         }
 
-        // === COMPARISON E VERIFICA ===
-        List<AnalyticalComputation.AnalyticalResult> analyticalResults =
-                AnalyticalComputation.computeAnalyticalResults("FINITE_SIMULATION");
-
-        List<Comparison.ComparisonResult> comparisonResults =
-                Comparison.compareResults("FINITE_SIMULATION", analyticalResults, meanStatsList);
-
-        Verification.verifyConfidenceIntervals(
-                "FINITE_SIMULATION",
-                meanStatsList,
-                comparisonResults,
-                ciList
-        );
+        // === NUMERO MEDIO DI JOB PROCESSATI ===
+        System.out.println("=== NUMERO MEDIO DI JOB PROCESSATI ===");
+        double totalAvgJobsProcessed = 0.0;
+        for (int j = 0; j < SIMPLE_NODES + RIDE_NODES; j++) {
+            List<Long> jobsList = jobsProcessedByNode.get(j);
+            double avgJobs = jobsList.stream().mapToLong(Long::longValue).average().orElse(0.0);
+            totalAvgJobsProcessed += Math.floor(avgJobs);  // tronca la media per difetto
+        }
+        System.out.printf("Media totale jobs processati (approssimazione per difetto): %.0f%n", totalAvgJobsProcessed);
     }
 
     // utilitario per sommare tutti i served in un array di MsqSum
@@ -374,7 +374,6 @@ public class RideSharingSystem implements Sistema {
         }
         return localNodes;
     }
-
 
     @Override
     public void runInfiniteSimulation() {

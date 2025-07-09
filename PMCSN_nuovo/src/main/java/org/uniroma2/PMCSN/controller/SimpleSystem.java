@@ -64,6 +64,11 @@ public class SimpleSystem implements Sistema {
         String baseDir = "csvFilesIntervals";
         Rngs rngs = new Rngs();
 
+        List<List<Long>> jobsProcessedByNode = new ArrayList<>(NODES);
+        for (int i = 0; i < NODES; i++) {
+            jobsProcessedByNode.add(new ArrayList<>());
+        }
+
         double[] ETs = new double[NODES];
         double[] ETq = new double[NODES];
         double[] ES = new double[NODES];
@@ -166,6 +171,8 @@ public class SimpleSystem implements Sistema {
                 MsqSum[] sums = localNodes.get(i).getMsqSums();
 
                 long jobsNow = Arrays.stream(sums).mapToLong(s -> s.served).sum();
+                jobsProcessedByNode.get(i).add(jobsNow);
+
                 int numServers = sums.length - 1;
 
                 if (jobsNow > 0) {
@@ -264,6 +271,16 @@ public class SimpleSystem implements Sistema {
                     ci.getLambdaCI()
             );
         }
+
+        // === NUMERO MEDIO DI JOB PROCESSATI ===
+        System.out.println("=== NUMERO MEDIO DI JOB PROCESSATI ===");
+        double totalAvgJobsProcessed = 0.0;
+        for (int j = 0; j < NODES; j++) {
+            List<Long> jobsList = jobsProcessedByNode.get(j);
+            double avgJobs = jobsList.stream().mapToLong(Long::longValue).average().orElse(0.0);
+            totalAvgJobsProcessed += Math.floor(avgJobs);  // tronca la media per difetto
+        }
+        System.out.printf("Media totale jobs processati (approssimazione per difetto): %.0f%n", totalAvgJobsProcessed);
 
         // === COMPARISON E VERIFICA ===
         List<AnalyticalResult> analyticalResults =
@@ -504,10 +521,6 @@ public class SimpleSystem implements Sistema {
             );
         }
 
-
-
-
-
     }
 
     // helper locale per calcolare la media
@@ -543,5 +556,4 @@ public class SimpleSystem implements Sistema {
             directory.delete();
         }
     }
-
 }

@@ -72,7 +72,6 @@ public class Distrs {
 //
 //        double u = uniform(alpha, beta, r);
 //        return idfNormal(esi, 10.0, u);
-       // return exponential(esi,r);
-        return 20;
+        return exponential(esi,r);
     }
 }
