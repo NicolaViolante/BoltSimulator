@@ -152,21 +152,26 @@ public class RideSharingMultiServerNode implements Node {
 
         } else {
             // 4) DEPARTURE
-            int serverIdx = e - 1;
-            numberJobInSystem--;
-            sum[serverIdx].served++;
-            sum[serverIdx].service += event.get(e).svc;
 
             System.out.printf("[%.3f] DEPARTURE from server %d, jobsInSystem=%d%n",
-                    clock.current, serverIdx, numberJobInSystem);
+                    clock.current, e, numberJobInSystem);
 
+            /*aggiornamento dei valori*/
             MsqEvent sEvent = event.get(e);
+            int numRichiesteServite = sEvent.numRichiesteServite;
+
+            numberJobInSystem -= numRichiesteServite;
+            sum[e].served += numRichiesteServite;
+
+            /*aumentiamo il tempo di servizio*/
+            sum[e].service += event.get(e).svc;
+
             sEvent.x = 0;
             sEvent.capacitaRimanente   = sEvent.capacita;
             sEvent.numRichiesteServite = 0;
             sEvent.postiRichiesti      = 0;
 
-            return serverIdx;
+            return e;
         }
 
         // 5) Batch‑matching

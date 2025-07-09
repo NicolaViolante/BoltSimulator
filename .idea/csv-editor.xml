@@ -17,13 +17,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/csvFiles/FINITE_SIMULATION/verification/verification.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="/csvFilesIntervals/finite_interval/center0.csv">
           <value>
             <Attribute>
