@@ -124,17 +124,30 @@ public class RideSharingSystem implements Sistema {
 
                         long served = Arrays.stream(sums).mapToLong(s -> s.served).sum();
 
-                        ETs[i] = a.getNodeArea() / served;
-                        ETq[i] = a.getQueueArea() / served;
-                        ES[i] = a.getServiceArea() / served;
+                        if (served > 0) {
+                            ETs[i] = a.getNodeArea() / served;
+                            ETq[i] = a.getQueueArea() / served;
+                            ES[i] = a.getServiceArea() / served;
 
-                        ENs[i] = a.getNodeArea() / nextReportTime;
-                        ENq[i] = a.getQueueArea() / nextReportTime;
-                        ENS[i] = a.getServiceArea() / nextReportTime;
+                            ENs[i] = a.getNodeArea() / nextReportTime;
+                            ENq[i] = a.getQueueArea() / nextReportTime;
+                            ENS[i] = a.getServiceArea() / nextReportTime;
 
-                        lambda[i] = served / nextReportTime;
-                        int numServers = sums.length - 1;
-                        rho[i] = (lambda[i] * ES[i]) / numServers;
+                            lambda[i] = served / nextReportTime;
+                            int numServers = sums.length - 1;
+                            rho[i] = (lambda[i] * ES[i]) / numServers;
+                        } else {
+                            ETs[i] = 0.0;
+                            ETq[i] = 0.0;
+                            ES[i] = 0.0;
+
+                            ENs[i] = 0.0;
+                            ENq[i] = 0.0;
+                            ENS[i] = 0.0;
+
+                            lambda[i] = 0.0;
+                            rho[i] = 0.0;
+                        }
 
                         IntervalCSVGenerator.writeIntervalData(
                                 true, rep, i, nextReportTime,
