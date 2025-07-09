@@ -144,24 +144,42 @@ public class RideSharingMultiServerNode implements Node {
             }
 
         } else {
-            // 4) DEPARTURE
+                // 4) DEPARTURE (una singola richiesta completata)
+                MsqEvent sEvent = event.get(e);
 
-            /*aggiornamento dei valori*/
-            MsqEvent sEvent = event.get(e);
-            int numRichiesteServite = sEvent.numRichiesteServite;
+                MsqEvent completedReq = sEvent.richiesteInServizio.poll();
 
-            numberJobInSystem -= numRichiesteServite;
-            sum[e].served += numRichiesteServite;
+                numberJobInSystem--;
+                sum[e].served++;
 
-            /*aumentiamo il tempo di servizio*/
-            sum[e].service += event.get(e).svc;
+                assert completedReq != null;
 
-            sEvent.x = 0;
-            sEvent.capacitaRimanente   = sEvent.capacita;
-            sEvent.numRichiesteServite = 0;
-            sEvent.postiRichiesti      = 0;
+                // Calcolo il tempo di servizio specifico per la richiesta completata
+                double elapsed = clock.current - completedReq.startServiceTime;
+                sum[e].service += elapsed;
 
-            return e;
+                // Aggiorno capacità e posti
+                sEvent.capacitaRimanente += completedReq.postiRichiesti;
+                sEvent.postiRichiesti -= completedReq.postiRichiesti;
+
+                sEvent.numRichiesteServite--;
+
+                if (sEvent.numRichiesteServite > 0) {
+                    // Avvio il servizio della prossima richiesta in coda (se startServiceTime == -1)
+                    MsqEvent nextReq = sEvent.richiesteInServizio.peek();
+                    if (nextReq != null && nextReq.startServiceTime < 0) {
+                        nextReq.startServiceTime = clock.current;
+                        sEvent.startServiceTime = nextReq.startServiceTime; // aggiorno con startServiceTime della richiesta
+                        sEvent.svc = nextReq.svc;
+                        sEvent.t = nextReq.t;
+                        sEvent.x = 1; // server ancora attivo
+                    }
+                } else {
+                    // Nessuna richiesta residua → server diventa idle
+                    sEvent.reset();
+                }
+
+                return e;
         }
 
         // 5) Batch‑matching
@@ -195,7 +213,7 @@ public class RideSharingMultiServerNode implements Node {
 
         int busy = 0;
         for (int i = 1; i < event.size(); i++) {
-            busy += event.get(i).getNumRichiesteServite();
+            busy += event.get(i).getNumRichiesteInServizio();
         }
         areaCollector.incServiceArea(dt * busy);
         // 4. Incremento area di coda (solo quelle *in attesa*)
@@ -338,66 +356,40 @@ public class RideSharingMultiServerNode implements Node {
         MsqEvent s = event.get(serverIdx);
         double svcNew = distrs.getServiceTimeRideSharing(rng);
 
-        System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n", req.postiRichiesti, serverIdx, clock.current);
+        System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n",
+                req.postiRichiesti, serverIdx, clock.current);
         System.out.printf("New service time drawn: %.3f%n", svcNew);
 
-        double alpha = 0.1; // fattore di incremento (10% per ogni richiesta aggiuntiva)
-
-        System.out.printf("Server %d status: isBusy=%b, numRichiesteServite=%d%n", serverIdx, s.isBusy(), s.numRichiesteServite);
-        System.out.printf("Current service info before assignment: startServiceTime=%.3f, svc=%.3f, t=%.3f%n", s.startServiceTime, s.svc, s.t);
+        req.svc = svcNew;  // Associo il tempo di servizio specifico alla richiesta
 
         if (!s.isBusy()) {
-            // Primo passeggero → parte subito
-            s.startServiceTime = clock.current;
+            // Server libero, la richiesta parte subito
+            s.startServiceTime = req.startServiceTime = clock.current;
             s.svc = svcNew;
-            s.t = s.startServiceTime + svcNew;
+            s.t = clock.current + svcNew;
+            s.x = 1; // server attivo
 
             System.out.printf("Server %d was idle. Starting service at %.3f, ending at %.3f%n",
                     serverIdx, s.startServiceTime, s.t);
         } else {
-            // Server già attivo
-            double elapsed = clock.current - s.startServiceTime;
-            double remaining = Math.max(s.svc - elapsed, 0);
-
-            System.out.printf("Elapsed time on current service: %.3f%n", elapsed);
-            System.out.printf("Remaining time on current service: %.3f%n", remaining);
-
-            if (remaining < 1e-6) {
-                // Servizio praticamente finito → resetto partenza da adesso
-                s.startServiceTime = clock.current;
-                s.svc = svcNew;
-                s.t = s.startServiceTime + svcNew;
-
-                System.out.printf("Server %d service finished. Restarting at %.3f, ending at %.3f%n",
-                        serverIdx, s.startServiceTime, s.t);
-            } else {
-                // Calcolo overhead proporzionale al numero di richieste già servite
-                double overhead = svcNew * alpha * s.numRichiesteServite;
-                System.out.printf("Calculated overhead: svcNew * alpha * numRichiesteServite = %.3f * %.3f * %d = %.3f%n",
-                        svcNew, alpha, s.numRichiesteServite, overhead);
-
-                // Calcolo nuovo tempo di servizio: prendo il max tra remaining e svcNew+overhead per "allungare"
-                double newServiceTime = svcNew + overhead;
-                System.out.printf("New service time (svcNew + overhead): %.3f + %.3f = %.3f%n", svcNew, overhead, newServiceTime);
-
-                // Aggiorno tempo di servizio totale
-                double maxTime = Math.max(remaining, newServiceTime);
-                System.out.printf("Max tra remaining e newServiceTime: max(%.3f, %.3f) = %.3f%n", remaining, newServiceTime, maxTime);
-
-                s.svc = elapsed + maxTime;
-                s.t = s.startServiceTime + s.svc;
-
-                System.out.printf("Server %d busy. Updated svc: %.3f, Updated end time: %.3f%n",
-                        serverIdx, s.svc, s.t);
-            }
+            // Intanto memorizzo la richiesta ma schedulo il completamento dopo
+            /*da modificare*/
+            req.startServiceTime = -1;
+            req.svc = svcNew;
+            req.t = svcNew + clock.current;
+            System.out.printf("Server %d is busy. This request will start later.%n", serverIdx);
         }
 
-        // Aggiorna batch
+        // Aggiorna stato server
         s.numRichiesteServite++;
         s.capacitaRimanente -= req.postiRichiesti;
         s.postiRichiesti += req.postiRichiesti;
 
-        System.out.printf("After assignment: Server %d now serving %d requests, capacitaRimanente: %d, postiRichiesti: %d%n%n",
-                serverIdx, s.numRichiesteServite, s.capacitaRimanente, s.postiRichiesti);
+        // Aggiungo la richiesta alla lista delle richieste in servizio
+        s.richiesteInServizio.add(req);
+
+        System.out.printf("After assignment: Server %d now serving %d requests, capacitaRimanente: %d%n%n",
+                serverIdx, s.numRichiesteServite, s.capacitaRimanente);
     }
+
 }

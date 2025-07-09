@@ -1,5 +1,8 @@
 package org.uniroma2.PMCSN.model;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class MsqEvent {        /* the next-event list    */
     public double t;                 /* next event time        */
     public int x;                    /* event status, 0 or 1   */
@@ -9,8 +12,10 @@ public class MsqEvent {        /* the next-event list    */
     public int numRichiesteServite;
     public double svc;
 
-    /*prova*/
     public double startServiceTime = -1;
+
+    /*prova*/
+    public Queue<MsqEvent> richiesteInServizio = new LinkedList<>();
 
     public int getNumRichiesteServite() {
         return numRichiesteServite;
@@ -28,5 +33,12 @@ public class MsqEvent {        /* the next-event list    */
         postiRichiesti = 0;
         capacitaRimanente = capacita;
         numRichiesteServite = 0;
+
+        /*prova*/
+        richiesteInServizio.clear();
+    }
+
+    public int getNumRichiesteInServizio() {
+        return richiesteInServizio.size();
     }
 }
