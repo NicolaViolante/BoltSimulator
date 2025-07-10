@@ -144,42 +144,37 @@ public class RideSharingMultiServerNode implements Node {
             }
 
         } else {
-                // 4) DEPARTURE (una singola richiesta completata)
-                MsqEvent sEvent = event.get(e);
+            // DEPARTURE: significa che il server e ha terminato la richiesta con tempo minimo
 
-                MsqEvent completedReq = sEvent.richiesteInServizio.poll();
-
-                numberJobInSystem--;
-                sum[e].served++;
-
-                assert completedReq != null;
-
-                // Calcolo il tempo di servizio specifico per la richiesta completata
-                double elapsed = clock.current - completedReq.startServiceTime;
-                sum[e].service += elapsed;
-
-                // Aggiorno capacità e posti
-                sEvent.capacitaRimanente += completedReq.postiRichiesti;
-                sEvent.postiRichiesti -= completedReq.postiRichiesti;
-
-                sEvent.numRichiesteServite--;
-
-                if (sEvent.numRichiesteServite > 0) {
-                    // Avvio il servizio della prossima richiesta in coda (se startServiceTime == -1)
-                    MsqEvent nextReq = sEvent.richiesteInServizio.peek();
-                    if (nextReq != null && nextReq.startServiceTime < 0) {
-                        nextReq.startServiceTime = clock.current;
-                        sEvent.startServiceTime = nextReq.startServiceTime; // aggiorno con startServiceTime della richiesta
-                        sEvent.svc = nextReq.svc;
-                        sEvent.t = nextReq.t;
-                        sEvent.x = 1; // server ancora attivo
-                    }
-                } else {
-                    // Nessuna richiesta residua → server diventa idle
-                    sEvent.reset();
-                }
-
+            MsqEvent server = event.get(e);
+            if (server.richiesteInServizio.isEmpty()) {
+                // Nessuna richiesta da completare: errore o stato inatteso
+                server.x = 0;
                 return e;
+            }
+
+            // Rimuovo la richiesta completata (quella con t minimo)
+            MsqEvent completedReq = server.richiesteInServizio.poll();
+            numberJobInSystem -= 1;
+            sum[e].served += 1;
+            sum[e].service += completedReq.svc;
+            server.capacitaRimanente += completedReq.postiRichiesti; // libera capacità
+            server.numRichiesteServite--;
+
+            // Se ci sono altre richieste in corso, aggiorno il tempo di completamento al minimo delle restanti
+            if (!server.richiesteInServizio.isEmpty()) {
+                MsqEvent nextCompletion = server.richiesteInServizio.peek();
+                server.t = nextCompletion.t;
+            } else {
+                // Nessuna richiesta rimasta, server torna inattivo
+                server.x = 0;
+                server.t = Double.POSITIVE_INFINITY;
+                server.startServiceTime = -1;
+                server.postiRichiesti = 0;
+                server.capacitaRimanente = server.capacita;
+            }
+
+            return e;
         }
 
         // 5) Batch‑matching
@@ -216,11 +211,16 @@ public class RideSharingMultiServerNode implements Node {
             busy += event.get(i).getNumRichiesteInServizio();
         }
         areaCollector.incServiceArea(dt * busy);
-        // 4. Incremento area di coda (solo quelle *in attesa*)
+
+        // Stampo l’area service aggiornata
+        System.out.printf("Incremented service area by %.3f, total service area now: %.3f%n",
+                dt * busy, areaCollector.getServiceArea());
+
         int inQueue = Math.max(0, numberJobInSystem - busy);
         areaCollector.incQueueArea(dt * inQueue);
         clock.current = t;
     }
+
 
     @Override
     public Area getAreaObject() { return areaCollector; }
@@ -282,14 +282,14 @@ public class RideSharingMultiServerNode implements Node {
         int num_posti = event.postiRichiesti;
         if(num_posti <= 3){
             centriTradizionali.getFirst().generateArrival(event.t);
-           //genera evento di tipo 1
+            //genera evento di tipo 1
         } else if(num_posti == 4){
             centriTradizionali.get(1).generateArrival(event.t);
-           //genera eventi di tipo 2
+            //genera eventi di tipo 2
         } else {
             centriTradizionali.get(2).generateArrival(event.t);
-           //genera eventi di tipo 3
-       }
+            //genera eventi di tipo 3
+        }
     }
 
     public int findOne() {
@@ -353,43 +353,27 @@ public class RideSharingMultiServerNode implements Node {
     }
 
     private void assignToServer(int serverIdx, MsqEvent req) {
-        MsqEvent s = event.get(serverIdx);
-        double svcNew = distrs.getServiceTimeRideSharing(rng);
+        MsqEvent server = event.get(serverIdx);
 
-        System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n",
-                req.postiRichiesti, serverIdx, clock.current);
-        System.out.printf("New service time drawn: %.3f%n", svcNew);
+        // Genera il tempo di servizio per la singola richiesta
+        double svcTime = distrs.getServiceTimeRideSharing(rng);
+        req.startServiceTime = clock.current;
+        req.svc = svcTime;
+        req.t = clock.current + svcTime;
 
-        req.svc = svcNew;  // Associo il tempo di servizio specifico alla richiesta
+        // Aggiungo la richiesta alla coda prioritaria del server
+        server.richiesteInServizio.add(req);
 
-        if (!s.isBusy()) {
-            // Server libero, la richiesta parte subito
-            s.startServiceTime = req.startServiceTime = clock.current;
-            s.svc = svcNew;
-            s.t = clock.current + svcNew;
-            s.x = 1; // server attivo
-
-            System.out.printf("Server %d was idle. Starting service at %.3f, ending at %.3f%n",
-                    serverIdx, s.startServiceTime, s.t);
-        } else {
-            // Intanto memorizzo la richiesta ma schedulo il completamento dopo
-            /*da modificare*/
-            req.startServiceTime = -1;
-            req.svc = svcNew;
-            req.t = svcNew + clock.current;
-            System.out.printf("Server %d is busy. This request will start later.%n", serverIdx);
+        // Aggiorno il tempo di completamento del server con la richiesta più "vicina" alla fine
+        MsqEvent nextCompletion = server.richiesteInServizio.peek();
+        if (nextCompletion != null) {
+            server.t = nextCompletion.t;
+            server.x = 1; // server attivo
         }
 
-        // Aggiorna stato server
-        s.numRichiesteServite++;
-        s.capacitaRimanente -= req.postiRichiesti;
-        s.postiRichiesti += req.postiRichiesti;
-
-        // Aggiungo la richiesta alla lista delle richieste in servizio
-        s.richiesteInServizio.add(req);
-
-        System.out.printf("After assignment: Server %d now serving %d requests, capacitaRimanente: %d%n%n",
-                serverIdx, s.numRichiesteServite, s.capacitaRimanente);
+        server.capacitaRimanente -= req.postiRichiesti;
+        server.numRichiesteServite++;
+        server.postiRichiesti += req.postiRichiesti;
     }
-
 }
+
