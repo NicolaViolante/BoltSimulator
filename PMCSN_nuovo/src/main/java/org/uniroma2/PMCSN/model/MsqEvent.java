@@ -17,15 +17,6 @@ public class MsqEvent implements Comparable<MsqEvent>  {        /* the next-even
     public PriorityQueue<MsqEvent> richiesteInServizio = new PriorityQueue<>();
     /*richieste effettive che il server sta servendo*/
 
-
-    public int getNumRichiesteServite() {
-        return numRichiesteServite;
-    }
-
-    public boolean isBusy() {
-        return startServiceTime >= 0;
-    }
-
     public void reset() {
         t = 0;
         svc = 0;

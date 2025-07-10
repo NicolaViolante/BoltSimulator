@@ -212,10 +212,6 @@ public class RideSharingMultiServerNode implements Node {
         }
         areaCollector.incServiceArea(dt * busy);
 
-        // Stampo l’area service aggiornata
-        System.out.printf("Incremented service area by %.3f, total service area now: %.3f%n",
-                dt * busy, areaCollector.getServiceArea());
-
         int inQueue = Math.max(0, numberJobInSystem - busy);
         areaCollector.incQueueArea(dt * inQueue);
         clock.current = t;
@@ -355,8 +351,13 @@ public class RideSharingMultiServerNode implements Node {
     private void assignToServer(int serverIdx, MsqEvent req) {
         MsqEvent server = event.get(serverIdx);
 
-        // Genera il tempo di servizio per la singola richiesta
+        // Genera il tempo di servizio base
         double svcTime = distrs.getServiceTimeRideSharing(rng);
+
+        // Aggiungi un incremento simbolico per salita/discesa passeggeri (5% in più)
+        double alpha = 0.05;
+        svcTime *= (1 + alpha);
+
         req.startServiceTime = clock.current;
         req.svc = svcTime;
         req.t = clock.current + svcTime;

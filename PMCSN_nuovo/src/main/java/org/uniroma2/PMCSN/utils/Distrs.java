@@ -47,34 +47,30 @@ public class Distrs {
     public double getServiceTimeSimple(Rngs r) {
         r.selectStream(1);
        double esi = config.getDouble("simulation","esi");
-//        double alpha, beta;
-//        double a = 2;
-//        double b = 60;
-//
-//        alpha = cdfNormal(esi, 10.0, a);
-//        beta = cdfNormal(esi, 10.0, b);
-//
-//        double u = uniform(alpha, beta, r);
-//        return idfNormal(esi, 10.0, u);
-        return exponential(esi,r);
+        double alpha, beta;
+        double a = 2;
+        double b = 60;
+
+        alpha = cdfNormal(esi, 10.0, a);
+        beta = cdfNormal(esi, 10.0, b);
+
+        double u = uniform(alpha, beta, r);
+        return idfNormal(esi, 10.0, u);
+//        return exponential(esi,r);
     }
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeRideSharing(Rngs r) {
         r.selectStream(1);
         double esi = config.getDouble("simulation","esi");
-//        double alpha, beta;
-//        double a = 2;
-//        double b = 60;
-//
-//        alpha = cdfNormal(esi, 10.0, a);
-//        beta = cdfNormal(esi, 10.0, b);
-//
-//        double u = uniform(alpha, beta, r);
-//        return idfNormal(esi, 10.0, u);
-//        return exponential(esi,r);
+        double alpha, beta;
+        double a = 2;
+        double b = 60;
 
-            return 20;
+        alpha = cdfNormal(esi, 10.0, a);
+        beta = cdfNormal(esi, 10.0, b);
 
+        double u = uniform(alpha, beta, r);
+        return idfNormal(esi, 10.0, u);
     }
 }
