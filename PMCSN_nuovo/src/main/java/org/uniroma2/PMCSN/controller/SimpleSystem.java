@@ -817,6 +817,7 @@ public class SimpleSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
+        int count=0;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -832,6 +833,7 @@ public class SimpleSystem implements Sistema {
             areaServSnap[i]   = a.getServiceArea();
             jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
         }
+
 
         // Loop principale per batch
         while (batchNumber < NUMBATCHES) {
@@ -940,6 +942,10 @@ public class SimpleSystem implements Sistema {
                     }
                 }
 
+                System.out.println(String.format(
+                        "DEBUG: batchNumber=%d, jobObservations=%d, idxMin=%d",
+                        batchNumber, jobObservations, idxMin));
+
 
                 if (globalWriter != null) {
                     try {
@@ -956,10 +962,13 @@ public class SimpleSystem implements Sistema {
                         );
                         globalWriter.write(line);
                         globalWriter.newLine();
+                        count++;
+                        System.out.println("global writer: " + count);
                     } catch (IOException e) {
                         System.err.println("Errore scrittura CSV sistema batch " + batchNumber + ": " + e.getMessage());
                     }
                 }
+
 
                 // Reset statistiche e snapshot per il batch successivo
                 for (SimpleMultiServerNode n : nodes) n.resetStatistics();
@@ -984,6 +993,16 @@ public class SimpleSystem implements Sistema {
                 }
             }
         }
+
+        // Chiudo anche il writer globale
+        if (globalWriter != null) {
+            try {
+                globalWriter.close();
+            } catch (IOException e) {
+                System.err.println("Errore chiusura global.csv: " + e.getMessage());
+            }
+        }
+
 
         // --- Calcolo medie cumulative globali e stampa finale ---
         List<MeanStatistics> meanStatsList = new ArrayList<>(NODES);
