@@ -13,7 +13,7 @@ public class Distrs {
 
     public double getNextArrivalTimeSimpleCenter(Rngs r, Sistema system, int centerIndex, double sarrival) {
         r.selectStream(0);
-        double lambda = config.getDouble("simulation","lambda");
+        double lambda = config.getDouble("simulation","lambdasimple");
 
         if(system instanceof SimpleSystem) {
             switch (centerIndex) {
@@ -37,7 +37,7 @@ public class Distrs {
 
     public double getNextArrivalTimeRideSharing(Rngs r, double sarrival) {
         r.selectStream(0);
-        double lambda = config.getDouble("simulation","lambda") * config.getDouble("simulation","pride") ;
+        double lambda = config.getDouble("simulation","lambdaride") * config.getDouble("simulation","pride") ;
         sarrival += exponential(1/lambda, r);
         return sarrival;
     }

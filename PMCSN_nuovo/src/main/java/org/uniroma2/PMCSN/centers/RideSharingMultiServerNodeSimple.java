@@ -51,7 +51,7 @@ public class RideSharingMultiServerNodeSimple implements Node {
 
         // primo arrivo esterno
         double firstArr = distrs.getNextArrivalTimeSimpleCenter(rng, system, centerIndex, 0.0);
-        MsqEvent e0 = eventList.get(ARRIVO_ESTERNO);
+        MsqEvent e0 = eventList.getFirst();
         e0.t = firstArr;
         e0.x = 1;
 
@@ -199,6 +199,11 @@ public class RideSharingMultiServerNodeSimple implements Node {
                 }
             }
         }
+    }
+
+    @Override
+    public double getBusy() {
+        return 0.0;
     }
 
     @Override

@@ -31,12 +31,12 @@ public class Verification {
         }
     }
 
-    public static void verifyConfidenceIntervals(String simulationType, List<MeanStatistics> meanStatisticsList, List<Comparison.ComparisonResult> comparisonResultList, List<ConfidenceInterval> confidenceIntervalsList) {
+    public static List<VerificationResult> verifyConfidenceIntervals(String simulationType, List<MeanStatistics> meanStatisticsList, List<Comparison.ComparisonResult> comparisonResultList, List<ConfidenceInterval> confidenceIntervalsList) {
         List<VerificationResult> verificationResults = new ArrayList<>();
 
         if (comparisonResultList.size() != confidenceIntervalsList.size() || comparisonResultList.size() != meanStatisticsList.size()) {
             System.out.println("Mismatch in the size of comparison results, confidence intervals, and mean statistics lists");
-            return;
+            return verificationResults;
         }
 
         for (int i = 0; i < comparisonResultList.size(); i++) {
@@ -48,6 +48,7 @@ public class Verification {
         }
 
         writeVerificationResults(simulationType, verificationResults);
+        return verificationResults;
     }
 
     public static void writeVerificationResults(String modelName, List<VerificationResult> verificationResults) {

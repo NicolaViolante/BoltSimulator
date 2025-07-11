@@ -134,9 +134,18 @@ public class RideSharingSystem implements Sistema {
                             ENq[i] = a.getQueueArea() / nextReportTime;
                             ENS[i] = a.getServiceArea() / nextReportTime;
 
-                            lambda[i] = served / nextReportTime;
                             int numServers = sums.length - 1;
-                            rho[i] = (lambda[i] * ES[i]) / numServers;
+                            if(i != 4) {
+
+                                lambda[i] = served / nextReportTime;
+                                rho[i] = (lambda[i] * ES[i]) / numServers;
+
+                            } else {
+
+                                rho[i] = localNodes.get(i).getBusy() / numServers;
+
+                            }
+
                         } else {
                             ETs[i] = 0.0;
                             ETq[i] = 0.0;
@@ -199,6 +208,17 @@ public class RideSharingSystem implements Sistema {
 
                     double lambdaReplica = jobsNow / STOP;
                     double rhoReplica = (lambdaReplica * ESReplica) / numServers;
+
+                    if(i != 4) {
+
+                        lambda[i] = jobsNow / nextReportTime;
+                        rho[i] = (lambda[i] * ES[i]) / numServers;
+
+                    } else {
+
+                        rho[i] = localNodes.get(i).getBusy() / numServers;
+
+                    }
 
                     respTimeMeansByNode.get(i).add(ETsReplica);
                     queueTimeMeansByNode.get(i).add(ETqReplica);

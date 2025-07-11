@@ -126,6 +126,7 @@ public class SimpleMultiServerNode implements Node {
 
                 /*incremento le variabili di interesse*/
                 numberJobInSystem++;
+                System.out.printf("[DEBUG] ARRIVAL a t=%.4f, numberJobInSystem=%d\n", clock.current, numberJobInSystem);
                 /*incremento le variabili di interesse*/
 
                 MsqEvent arr = event.getFirst();
@@ -133,8 +134,11 @@ public class SimpleMultiServerNode implements Node {
                 /*tempo del successivo arrivo*/
                 arr.x = 1;
                 rng.selectStream(2);
-                if (rng.random() < P_EXIT) {
+                double rnd = rng.random();
+                System.out.printf("[DEBUG] RNG per uscita: %.4f\n", rnd);
+                if (rnd < P_EXIT) {
                     numberJobInSystem--;
+                    System.out.printf("[DEBUG] ARRIVAL esce subito, numberJobInSystem=%d\n", numberJobInSystem);
                     return -1;
                 }
             }
@@ -145,13 +149,14 @@ public class SimpleMultiServerNode implements Node {
 
                 /*significa che il server è libero*/
 
-
                 double serviceTimeSimple = distrs.getServiceTimeSimple(rng);
                 /*tempo di servizio*/
 
                 MsqEvent sEvent = event.get(serverIndex); /*evento di completamento*/
                 sEvent.t = clock.current + serviceTimeSimple;
 
+                System.out.printf("[DEBUG] Server %d prende servizio, serviceTime=%.4f, completionTime=%.4f\n",
+                        serverIndex, serviceTimeSimple, sEvent.t);
 
                 /*completion time*/
                 serversCompletition[serverIndex].setLastCompletionTime(sEvent.t);
@@ -173,13 +178,15 @@ public class SimpleMultiServerNode implements Node {
             // DEPARTURE
             numberJobInSystem--;
             sum[e].served++;
+            System.out.printf("[DEBUG] Completion server %d a t=%.4f, numberJobInSystem=%d\n", e, clock.current, numberJobInSystem);
 
             if (numberJobInSystem >= numberOfServersInTheCenter) {
                 double serviceTimeSimple = distrs.getServiceTimeSimple(rng);
 
-
                 MsqEvent sEvent = event.get(e);
                 sEvent.t = clock.current + serviceTimeSimple; /*nuovo tempo di completamento*/
+
+                System.out.printf("[DEBUG] Server %d nuovo completion a t=%.4f\n", e, sEvent.t);
 
                 /*completion time*/
                 serversCompletition[e].setLastCompletionTime(sEvent.t);
@@ -189,6 +196,7 @@ public class SimpleMultiServerNode implements Node {
                 return e;
             } else {
                 event.get(e).x = 0;
+                System.out.printf("[DEBUG] Server %d diventa libero a t=%.4f\n", e, clock.current);
             }
         }
         return -1;
@@ -316,6 +324,11 @@ public class SimpleMultiServerNode implements Node {
                 }
             }
         }
+    }
+
+    @Override
+    public double getBusy() {
+        return 0;
     }
 
     public int getNumberJobBusyInSystem() {

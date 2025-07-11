@@ -88,7 +88,7 @@ public class AnalyticalComputation {
         double pCentroMedium = config.getDouble("probabilities", "medium");
         double pCentroLarge = config.getDouble("probabilities", "large");
 
-        double lambda = config.getDouble("simulation", "lambda") * (1-config.getDouble("probabilities", "exit"));
+        double lambda = config.getDouble("simulation", "lambdasimple") * (1-config.getDouble("probabilities", "exit"));
 
         // Centro macchine small
         analyticalResults.add(multiServer(

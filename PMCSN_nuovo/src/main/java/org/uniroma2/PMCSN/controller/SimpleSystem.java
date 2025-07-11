@@ -296,13 +296,240 @@ public class SimpleSystem implements Sistema {
                 ciList
         );
     }
+//    @Override
+//    public void runInfiniteSimulation() {
+//        // 1) Parametri di batch‐means
+//        // es. 64 batch
+//        // es. 256 completamenti per batch
+//
+//        // 2) Preparo le liste per le batch‐means PER NODO
+//        List<List<Double>> respTimeMeansByNode     = new ArrayList<>(NODES);
+//        List<List<Double>> queueTimeMeansByNode    = new ArrayList<>(NODES);
+//        List<List<Double>> serviceTimeMeansByNode  = new ArrayList<>(NODES);
+//        List<List<Double>> systemPopMeansByNode    = new ArrayList<>(NODES);
+//        List<List<Double>> queuePopMeansByNode     = new ArrayList<>(NODES);
+//        List<List<Double>> utilizationByNode       = new ArrayList<>(NODES);
+//        List<List<Double>> lambdaByNode            = new ArrayList<>(NODES);
+//
+//        for (int i = 0; i < NODES; i++) {
+//            respTimeMeansByNode   .add(new ArrayList<>());
+//            queueTimeMeansByNode  .add(new ArrayList<>());
+//            serviceTimeMeansByNode.add(new ArrayList<>());
+//            systemPopMeansByNode  .add(new ArrayList<>());
+//            queuePopMeansByNode   .add(new ArrayList<>());
+//            utilizationByNode     .add(new ArrayList<>());
+//            lambdaByNode          .add(new ArrayList<>());
+//        }
+//
+//        // 3) Snapshots iniziali (per il delta)
+//        double[] areaNodeSnap   = new double[NODES];
+//        double[] areaQueueSnap  = new double[NODES];
+//        double[] areaServSnap   = new double[NODES];
+//        long[]   jobsServedSnap = new long[NODES];
+//
+//        double clock;
+//        double startTimeBatch = 0.0;
+//        double endTimeBatch;
+//        double lastArrTime    = 0.0;
+//        double lastCompTime   = 0.0;
+//
+//        int batchNumber     = 0;
+//        int jobObservations = 0;
+//
+//        // 4) Inizializzo RNG e nodi
+//        Rngs rngs = new Rngs();
+//        rngs.plantSeeds(SEED);
+//        List<SimpleMultiServerNode> nodes = init(rngs);
+//
+//        // 5) Primo snapshot (t = 0)
+//        for (int i = 0; i < NODES; i++) {
+//            Area a      = nodes.get(i).getAreaObject();
+//            MsqSum[] ss = nodes.get(i).getMsqSums();
+//            areaNodeSnap[i]   = a.getNodeArea();
+//            areaQueueSnap[i]  = a.getQueueArea();
+//            areaServSnap[i]   = a.getServiceArea();
+//            jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
+//        }
+//
+//        // 6) Ciclo evento‐driven fino a k batch
+//        while (batchNumber < NUMBATCHES) {
+//            // trova il prossimo evento
+//            double tmin = Double.POSITIVE_INFINITY;
+//            int idxMin  = -1;
+//            for (int i = 0; i < NODES; i++) {
+//                double t = nodes.get(i).peekNextEventTime();
+//                if (t < tmin) {
+//                    tmin   = t;
+//                    idxMin = i;
+//                }
+//            }
+//
+//            // integra e processa
+//            for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
+//            clock = tmin;
+//            nodes.get(idxMin).processNextEvent(tmin);
+//
+//            // aggiorno arrival/completion
+//            if (idxMin == 0) {
+//                lastArrTime = Math.max(lastArrTime, tmin);
+//            } else {
+//                lastCompTime   = Math.max(lastCompTime, tmin);
+//                jobObservations++;
+//            }
+//
+//            // fine batch?
+//            if (jobObservations == BATCHSIZE) {
+//                endTimeBatch = clock;
+//
+//                // calcolo le batch‐means del batch corrente per ciascun nodo
+//                for (int i = 0; i < NODES; i++) {
+//                    Area    a       = nodes.get(i).getAreaObject();
+//                    MsqSum[] ss     = nodes.get(i).getMsqSums();
+//                    long    jobsNow = Arrays.stream(ss).mapToLong(s -> s.served).sum();
+//
+//                    long   deltaJobs      = jobsNow - jobsServedSnap[i];
+//                    double batchTime      = endTimeBatch - startTimeBatch;
+//                    double deltaNodeArea  = a.getNodeArea()   - areaNodeSnap[i];
+//                    double deltaQueueArea = a.getQueueArea()  - areaQueueSnap[i];
+//                    double deltaServArea  = a.getServiceArea() - areaServSnap[i];
+//                    int    numServers     = ss.length - 1;
+//
+//                    if (deltaJobs > 0 && batchTime > 0) {
+//                        double ETs    = deltaNodeArea  / deltaJobs;
+//                        double ETq    = deltaQueueArea / deltaJobs;
+//                        double ES     = deltaServArea  / deltaJobs;
+//                        double ENs    = deltaNodeArea  / batchTime;
+//                        double ENq    = deltaQueueArea / batchTime;
+//                        double ENS    = deltaServArea  / batchTime;
+//                        double lambda = deltaJobs      / batchTime;
+//                        double rho    = (lambda * ES)  / numServers;
+//
+//                        respTimeMeansByNode   .get(i).add(ETs);
+//                        queueTimeMeansByNode  .get(i).add(ETq);
+//                        serviceTimeMeansByNode.get(i).add(ES);
+//                        systemPopMeansByNode  .get(i).add(ENs);
+//                        queuePopMeansByNode   .get(i).add(ENq);
+//                        utilizationByNode     .get(i).add(rho);
+//                        lambdaByNode          .get(i).add(lambda);
+//                    }
+//                }
+//
+//                // reset statistice interne e nuovo snapshot zero
+//                for (SimpleMultiServerNode n : nodes) n.resetStatistics();
+//                for (int i = 0; i < NODES; i++) {
+//                    areaNodeSnap[i]   = 0.0;
+//                    areaQueueSnap[i]  = 0.0;
+//                    areaServSnap[i]   = 0.0;
+//                    jobsServedSnap[i] = 0L;
+//                }
+//                startTimeBatch = endTimeBatch;
+//
+//                batchNumber++;
+//                jobObservations = 0;
+//            }
+//        }
+//
+//        // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
+//        List<MeanStatistics> meanStatsList = new ArrayList<>(NODES);
+//        for (int i = 0; i < NODES; i++) {
+//            // calcolo medie dalle tue liste di batch‐means
+//            double mrt = computeMean(respTimeMeansByNode.get(i));
+//            double mqt = computeMean(queueTimeMeansByNode.get(i));
+//            double mst = computeMean(serviceTimeMeansByNode.get(i));
+//            double mns = computeMean(systemPopMeansByNode.get(i));
+//            double mnq = computeMean(queuePopMeansByNode.get(i));
+//            double mu  = computeMean(utilizationByNode.get(i));
+//            double ml  = computeMean(lambdaByNode.get(i));
+//
+//            // nome del centro, ad esempio "Center0", "Center1", ...
+//            String centerName = "Center" + i;
+//
+//            meanStatsList.add(new MeanStatistics(
+//                    centerName,
+//                    mrt,
+//                    mst,
+//                    mqt,
+//                    ml,
+//                    mns,
+//                    mu,
+//                    mnq
+//            ));
+//        }
+//
+//        // 8) Confronto analitico vs simulazione
+//        List<AnalyticalResult> analyticalResults =
+//                AnalyticalComputation.computeAnalyticalResults("INFINITE_SIMULATION");
+//        List<Comparison.ComparisonResult> comparisonResults =
+//                Comparison.compareResults("INFINITE_SIMULATION", analyticalResults, meanStatsList);
+//
+//        // 9) Calcolo gli intervalli di confidenza per ciascun nodo
+//        List<ConfidenceInterval> ciList = new ArrayList<>(NODES);
+//        for (int i = 0; i < NODES; i++) {
+//            ciList.add(new ConfidenceInterval(
+//                    respTimeMeansByNode.get(i),
+//                    queueTimeMeansByNode.get(i),
+//                    serviceTimeMeansByNode.get(i),
+//                    systemPopMeansByNode.get(i),
+//                    queuePopMeansByNode.get(i),
+//                    utilizationByNode.get(i),
+//                    lambdaByNode.get(i)
+//            ));
+//        }
+//
+//        // 10) Verifica dei CI
+//        Verification.verifyConfidenceIntervals(
+//                "INFINITE_SIMULATION",
+//                meanStatsList,
+//                comparisonResults,
+//                ciList
+//        );
+//
+//        System.out.println("=== STATISTICHE MEDIE CUMULATIVE ===");
+//        for (int i = 0; i < NODES; i++) {
+//            System.out.printf("Node %d: E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
+//                    i,
+//                    computeMean(respTimeMeansByNode.get(i)),
+//                    computeMean(queueTimeMeansByNode.get(i)),
+//                    computeMean(serviceTimeMeansByNode.get(i)), computeMean(systemPopMeansByNode.get(i)),
+//                    computeMean(queuePopMeansByNode.get(i)),
+//                    computeMean(utilizationByNode.get(i)),
+//                    computeMean(lambdaByNode.get(i))
+//            );
+//        }
+//
+//        System.out.println("=== INTERVALLI DI CONFIDENZA ===");
+//        for (int i = 0; i < NODES; i++) {
+//            ConfidenceInterval ci = new ConfidenceInterval(
+//                    respTimeMeansByNode.get(i),
+//                    queueTimeMeansByNode.get(i),
+//                    serviceTimeMeansByNode.get(i),
+//                    systemPopMeansByNode.get(i),
+//                    queuePopMeansByNode.get(i),
+//                    utilizationByNode.get(i),
+//                    lambdaByNode.get(i)
+//            );
+//
+//            System.out.printf("Node %d: ±CI E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[Ns]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
+//                    i,
+//                    ci.getResponseTimeCI(),
+//                    ci.getQueueTimeCI(),
+//                    ci.getServiceTimeCI(),
+//                    ci.getSystemPopulationCI(),
+//                    ci.getQueuePopulationCI(),
+//                    ci.getUtilizationCI(),
+//                    ci.getLambdaCI()
+//            );
+//        }
+//
+//    }
+
+    private static final String RESET         = "\u001B[0m";
+    private static final String BRIGHT_GREEN  = "\u001B[92m";
+    private static final String BRIGHT_YELLOW = "\u001B[93m";
+    private static final String BRIGHT_RED    = "\u001B[91m";
+
     @Override
     public void runInfiniteSimulation() {
-        // 1) Parametri di batch‐means
-        // es. 64 batch
-        // es. 256 completamenti per batch
-
-        // 2) Preparo le liste per le batch‐means PER NODO
         List<List<Double>> respTimeMeansByNode     = new ArrayList<>(NODES);
         List<List<Double>> queueTimeMeansByNode    = new ArrayList<>(NODES);
         List<List<Double>> serviceTimeMeansByNode  = new ArrayList<>(NODES);
@@ -321,7 +548,6 @@ public class SimpleSystem implements Sistema {
             lambdaByNode          .add(new ArrayList<>());
         }
 
-        // 3) Snapshots iniziali (per il delta)
         double[] areaNodeSnap   = new double[NODES];
         double[] areaQueueSnap  = new double[NODES];
         double[] areaServSnap   = new double[NODES];
@@ -336,12 +562,10 @@ public class SimpleSystem implements Sistema {
         int batchNumber     = 0;
         int jobObservations = 0;
 
-        // 4) Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
         rngs.plantSeeds(SEED);
         List<SimpleMultiServerNode> nodes = init(rngs);
 
-        // 5) Primo snapshot (t = 0)
         for (int i = 0; i < NODES; i++) {
             Area a      = nodes.get(i).getAreaObject();
             MsqSum[] ss = nodes.get(i).getMsqSums();
@@ -351,9 +575,7 @@ public class SimpleSystem implements Sistema {
             jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
         }
 
-        // 6) Ciclo evento‐driven fino a k batch
         while (batchNumber < NUMBATCHES) {
-            // trova il prossimo evento
             double tmin = Double.POSITIVE_INFINITY;
             int idxMin  = -1;
             for (int i = 0; i < NODES; i++) {
@@ -364,12 +586,10 @@ public class SimpleSystem implements Sistema {
                 }
             }
 
-            // integra e processa
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
 
-            // aggiorno arrival/completion
             if (idxMin == 0) {
                 lastArrTime = Math.max(lastArrTime, tmin);
             } else {
@@ -377,11 +597,9 @@ public class SimpleSystem implements Sistema {
                 jobObservations++;
             }
 
-            // fine batch?
             if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
 
-                // calcolo le batch‐means del batch corrente per ciascun nodo
                 for (int i = 0; i < NODES; i++) {
                     Area    a       = nodes.get(i).getAreaObject();
                     MsqSum[] ss     = nodes.get(i).getMsqSums();
@@ -414,7 +632,6 @@ public class SimpleSystem implements Sistema {
                     }
                 }
 
-                // reset statistice interne e nuovo snapshot zero
                 for (SimpleMultiServerNode n : nodes) n.resetStatistics();
                 for (int i = 0; i < NODES; i++) {
                     areaNodeSnap[i]   = 0.0;
@@ -429,40 +646,25 @@ public class SimpleSystem implements Sistema {
             }
         }
 
-        // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
         List<MeanStatistics> meanStatsList = new ArrayList<>(NODES);
         for (int i = 0; i < NODES; i++) {
-            // calcolo medie dalle tue liste di batch‐means
-            double mrt = computeMean(respTimeMeansByNode.get(i));
-            double mqt = computeMean(queueTimeMeansByNode.get(i));
-            double mst = computeMean(serviceTimeMeansByNode.get(i));
-            double mns = computeMean(systemPopMeansByNode.get(i));
-            double mnq = computeMean(queuePopMeansByNode.get(i));
-            double mu  = computeMean(utilizationByNode.get(i));
-            double ml  = computeMean(lambdaByNode.get(i));
-
-            // nome del centro, ad esempio "Center0", "Center1", ...
-            String centerName = "Center" + i;
-
             meanStatsList.add(new MeanStatistics(
-                    centerName,
-                    mrt,
-                    mst,
-                    mqt,
-                    ml,
-                    mns,
-                    mu,
-                    mnq
+                    "Center" + i,
+                    computeMean(respTimeMeansByNode.get(i)),
+                    computeMean(serviceTimeMeansByNode.get(i)),
+                    computeMean(queueTimeMeansByNode.get(i)),
+                    computeMean(lambdaByNode.get(i)),
+                    computeMean(systemPopMeansByNode.get(i)),
+                    computeMean(utilizationByNode.get(i)),
+                    computeMean(queuePopMeansByNode.get(i))
             ));
         }
 
-        // 8) Confronto analitico vs simulazione
         List<AnalyticalResult> analyticalResults =
                 AnalyticalComputation.computeAnalyticalResults("INFINITE_SIMULATION");
         List<Comparison.ComparisonResult> comparisonResults =
                 Comparison.compareResults("INFINITE_SIMULATION", analyticalResults, meanStatsList);
 
-        // 9) Calcolo gli intervalli di confidenza per ciascun nodo
         List<ConfidenceInterval> ciList = new ArrayList<>(NODES);
         for (int i = 0; i < NODES; i++) {
             ciList.add(new ConfidenceInterval(
@@ -476,61 +678,141 @@ public class SimpleSystem implements Sistema {
             ));
         }
 
-        // 10) Verifica dei CI
-        Verification.verifyConfidenceIntervals(
-                "INFINITE_SIMULATION",
-                meanStatsList,
-                comparisonResults,
-                ciList
-        );
+        List<Verification.VerificationResult> verificationResults =
+                Verification.verifyConfidenceIntervals(
+                        "INFINITE_SIMULATION",
+                        meanStatsList,
+                        comparisonResults,
+                        ciList
+                );
+
+        System.out.println("=== RISULTATI DI VERIFICA ===");
+        for (Verification.VerificationResult result : verificationResults) {
+            printVerificationResult(result);
+        }
 
         System.out.println("=== STATISTICHE MEDIE CUMULATIVE ===");
-        for (int i = 0; i < NODES; i++) {
-            System.out.printf("Node %d: E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
-                    i,
-                    computeMean(respTimeMeansByNode.get(i)),
-                    computeMean(queueTimeMeansByNode.get(i)),
-                    computeMean(serviceTimeMeansByNode.get(i)), computeMean(systemPopMeansByNode.get(i)),
-                    computeMean(queuePopMeansByNode.get(i)),
-                    computeMean(utilizationByNode.get(i)),
-                    computeMean(lambdaByNode.get(i))
+        for (MeanStatistics ms : meanStatsList) {
+            System.out.printf(
+                    "%s: E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
+                    ms.centerName,
+                    ms.meanResponseTime,
+                    ms.meanQueueTime,
+                    ms.meanServiceTime,
+                    ms.meanSystemPopulation,
+                    ms.meanQueuePopulation,
+                    ms.meanUtilization,
+                    ms.lambda
             );
         }
 
-        System.out.println("=== INTERVALLI DI CONFIDENZA ===");
-        for (int i = 0; i < NODES; i++) {
-            ConfidenceInterval ci = new ConfidenceInterval(
-                    respTimeMeansByNode.get(i),
-                    queueTimeMeansByNode.get(i),
-                    serviceTimeMeansByNode.get(i),
-                    systemPopMeansByNode.get(i),
-                    queuePopMeansByNode.get(i),
-                    utilizationByNode.get(i),
-                    lambdaByNode.get(i)
-            );
 
-            System.out.printf("Node %d: ±CI E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[Ns]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
-                    i,
-                    ci.getResponseTimeCI(),
-                    ci.getQueueTimeCI(),
-                    ci.getServiceTimeCI(),
-                    ci.getSystemPopulationCI(),
-                    ci.getQueuePopulationCI(),
-                    ci.getUtilizationCI(),
-                    ci.getLambdaCI()
-            );
+    }
+
+    private static void printVerificationResult(Verification.VerificationResult result) {
+        String within  = BRIGHT_GREEN + "within" + RESET;
+        String outside = BRIGHT_RED   + "outside" + RESET;
+
+        String rtColor = getColor(result.comparisonResult.responseTimeDiff);
+        String rtInOut = result.isWithinInterval(
+                result.comparisonResult.responseTimeDiff,
+                result.confidenceIntervals.getResponseTimeCI()
+        ) ? within : outside;
+        System.out.printf("%s\nE[Ts]: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.centerName,
+                result.meanStatistics.meanResponseTime,
+                rtColor, result.comparisonResult.responseTimeDiff, RESET,
+                rtInOut,
+                result.confidenceIntervals.getResponseTimeCI()
+        );
+
+        String qtColor = getColor(result.comparisonResult.queueTimeDiff);
+        String qtInOut = result.isWithinInterval(
+                result.comparisonResult.queueTimeDiff,
+                result.confidenceIntervals.getQueueTimeCI()
+        ) ? within : outside;
+        System.out.printf("E[Tq]: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.meanQueueTime,
+                qtColor, result.comparisonResult.queueTimeDiff, RESET,
+                qtInOut,
+                result.confidenceIntervals.getQueueTimeCI()
+        );
+
+        String stColor = getColor(result.comparisonResult.serviceTimeDiff);
+        String stInOut = result.isWithinInterval(
+                result.comparisonResult.serviceTimeDiff,
+                result.confidenceIntervals.getServiceTimeCI()
+        ) ? within : outside;
+        System.out.printf("E[Si]: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.meanServiceTime,
+                stColor, result.comparisonResult.serviceTimeDiff, RESET,
+                stInOut,
+                result.confidenceIntervals.getServiceTimeCI()
+        );
+
+        String npColor = getColor(result.comparisonResult.systemPopulationDiff);
+        String npInOut = result.isWithinInterval(
+                result.comparisonResult.systemPopulationDiff,
+                result.confidenceIntervals.getSystemPopulationCI()
+        ) ? within : outside;
+        System.out.printf("E[Ns]: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.meanSystemPopulation,
+                npColor, result.comparisonResult.systemPopulationDiff, RESET,
+                npInOut,
+                result.confidenceIntervals.getSystemPopulationCI()
+        );
+
+        String nqColor = getColor(result.comparisonResult.queuePopulationDiff);
+        String nqInOut = result.isWithinInterval(
+                result.comparisonResult.queuePopulationDiff,
+                result.confidenceIntervals.getQueuePopulationCI()
+        ) ? within : outside;
+        System.out.printf("E[Nq]: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.meanQueuePopulation,
+                nqColor, result.comparisonResult.queuePopulationDiff, RESET,
+                nqInOut,
+                result.confidenceIntervals.getQueuePopulationCI()
+        );
+
+        String uColor = getColor(result.comparisonResult.utilizationDiff);
+        String uInOut = result.isWithinInterval(
+                result.comparisonResult.utilizationDiff,
+                result.confidenceIntervals.getUtilizationCI()
+        ) ? within : outside;
+        System.out.printf("ρ: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.meanUtilization,
+                uColor, result.comparisonResult.utilizationDiff, RESET,
+                uInOut,
+                result.confidenceIntervals.getUtilizationCI()
+        );
+
+        String lColor = getColor(result.comparisonResult.lambdaDiff);
+        String lInOut = result.isWithinInterval(
+                result.comparisonResult.lambdaDiff,
+                result.confidenceIntervals.getLambdaCI()
+        ) ? within : outside;
+        System.out.printf("λ: mean %.4f, diff %s%.4f%s is %s ±%.4f%n",
+                result.meanStatistics.lambda,
+                lColor, result.comparisonResult.lambdaDiff, RESET,
+                lInOut,
+                result.confidenceIntervals.getLambdaCI()
+        );
+    }
+
+    private static String getColor(double value) {
+        if (value < 0.5) {
+            return BRIGHT_GREEN;
+        } else if (value < 1.0) {
+            return BRIGHT_YELLOW;
+        } else {
+            return BRIGHT_RED;
         }
-
     }
 
     // helper locale per calcolare la media
     private double computeMean(List<Double> list) {
         return list.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
     }
-
-
-
-
 
     private List<SimpleMultiServerNode> init(Rngs rng) {
         List<SimpleMultiServerNode> localNodes = new ArrayList<>();

@@ -4,8 +4,6 @@ import org.uniroma2.PMCSN.model.Area;
 import org.uniroma2.PMCSN.model.MsqServer;
 import org.uniroma2.PMCSN.model.MsqSum;
 
-import java.util.List;
-
 public interface Node {
 
     double peekNextEventTime();
@@ -21,4 +19,5 @@ public interface Node {
     double getUtilization();
     MsqServer[] getServersCompletition();
     void resetStatistics();
+    double getBusy();
 }
