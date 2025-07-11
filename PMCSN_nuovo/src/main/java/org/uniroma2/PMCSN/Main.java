@@ -49,7 +49,7 @@ public class Main {
 
         // 5) Calcola n overall che soddisfa tutte le stime
         SampleSizeEstimator estimator = new SampleSizeEstimator();
-        long computedReplicas = estimator.estimateOverallSampleSize(
+        estimator.estimateOverallSampleSize(
                 wProportion,
                 confidenceLevel,
                 preStdTs, preStdTq, preStds,
@@ -57,11 +57,11 @@ public class Main {
         );
 
         // 6) Sovrascrivi simulation.replicas e riscrivi il file
-        props.setProperty("simulation.replicas", Long.toString(computedReplicas));
-        try (OutputStream out = new FileOutputStream(configFile)) {
-            props.store(out, "Aggiornato simulation.replicas in base al CI (overall)");
-        }
-        System.out.println(">> simulation.replicas impostato a: " + computedReplicas);
+//        props.setProperty("simulation.replicas", Long.toString(computedReplicas));
+//        try (OutputStream out = new FileOutputStream(configFile)) {
+//            props.store(out, "Aggiornato simulation.replicas in base al CI (overall)");
+//        }
+//        System.out.println(">> simulation.replicas impostato a: " + computedReplicas);
 
         // 7) Scelta del tipo di sistema
         System.out.println("---- Choose type of system ----");

@@ -25,27 +25,21 @@ public class RideSharingMultiServerNode implements Node {
     private final List<MsqEvent> pendingArrivals = new ArrayList<>();
 
     private int numberJobInSystem = 0;
-    private final int numberJobsProcessed = 0;
     private final int RIDESERVERS;
-    private final int Ssmall;
-    private final int Smedium;
-    private final int Slarge;
 
     private final double P_EXIT;
     private final double P_FEEDBACK;
     private final double P_MATCH_BUSY;
     private final double P_MATCH_IDLE;
     private final double TIME_WINDOW;
-    private final Sistema system;
-    private final ConfigurationManager config = new ConfigurationManager();
     private final List<RideSharingMultiServerNodeSimple> centriTradizionali;
 
     public RideSharingMultiServerNode(Sistema system, Rngs rng, List<RideSharingMultiServerNodeSimple> centriTradizionali) {
 
-        this.system = system;
         this.rng = rng;
         this.centriTradizionali = centriTradizionali;
 
+        ConfigurationManager config = new ConfigurationManager();
         P_EXIT = config.getDouble("probabilities", "rideExit");
         P_FEEDBACK = config.getDouble("probabilities", "rideFeedback");
         P_MATCH_BUSY = config.getDouble("probabilities", "rideMatchBusy");
@@ -53,9 +47,8 @@ public class RideSharingMultiServerNode implements Node {
         TIME_WINDOW = config.getDouble("simulation", "timeWindow");
 
         String[] srv = config.getString("simulation", "rideSimpleServers").split(",");
-        Ssmall = Integer.parseInt(srv[0].trim());
-        Smedium = Integer.parseInt(srv[1].trim());
-        Slarge = Integer.parseInt(srv[2].trim());
+        int small = Integer.parseInt(srv[0].trim());
+        var medium = Integer.parseInt(srv[1].trim());
         RIDESERVERS = config.getInt("simulation", "rideServers");
 
         sum = new MsqSum[RIDESERVERS + 1];
@@ -66,8 +59,8 @@ public class RideSharingMultiServerNode implements Node {
             MsqEvent ev = new MsqEvent();
 
             if (i > 0) {
-                if (i <= Ssmall) ev.capacita = ev.capacitaRimanente = 3;
-                else if (i <= Ssmall + Smedium) ev.capacita = ev.capacitaRimanente = 4;
+                if (i <= small) ev.capacita = ev.capacitaRimanente = 3;
+                else if (i <= small + medium) ev.capacita = ev.capacitaRimanente = 4;
                 else ev.capacita = ev.capacitaRimanente = 8;
                 ev.numRichiesteServite = 0;
                 ev.x = 0;
@@ -184,6 +177,8 @@ public class RideSharingMultiServerNode implements Node {
             nextMatchTime = Double.POSITIVE_INFINITY;
         }
 
+        
+
         return -1;
     }
 
@@ -230,11 +225,8 @@ public class RideSharingMultiServerNode implements Node {
         double r = rng.random();
         if (r < 0.4) return 1;
         if (r < 0.7) return 2;
-        if (r < 0.8) return 3;
-        if (r < 0.85) return 4;
-        if (r < 0.9) return 5;
-        if (r < 0.95) return 6;
-        return 7;
+        if (r < 0.9) return 3;
+        return 4;
     }
 
     public double getUtilization() {
@@ -346,7 +338,7 @@ public class RideSharingMultiServerNode implements Node {
         System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n", req.postiRichiesti, serverIdx, clock.current);
         System.out.printf("New service time drawn: %.3f%n", svcNew);
 
-        double alpha = 0.1; // fattore di incremento (10% per ogni richiesta aggiuntiva)
+        double alpha = 0.2; // fattore di incremento (10% per ogni richiesta aggiuntiva)
 
         System.out.printf("Server %d status: isBusy=%b, numRichiesteServite=%d%n", serverIdx, s.isBusy(), s.numRichiesteServite);
         System.out.printf("Current service info before assignment: startServiceTime=%.3f, svc=%.3f, t=%.3f%n", s.startServiceTime, s.svc, s.t);
@@ -389,7 +381,8 @@ public class RideSharingMultiServerNode implements Node {
                 double maxTime = Math.max(remaining, newServiceTime);
                 System.out.printf("Max tra remaining e newServiceTime: max(%.3f, %.3f) = %.3f%n", remaining, newServiceTime, maxTime);
 
-                s.svc = elapsed + maxTime;
+                //s.svc = elapsed + maxTime;
+                s.svc = elapsed + (s.svc*s.numRichiesteServite + svcNew) / (s.numRichiesteServite+1);
                 s.t = s.startServiceTime + s.svc;
 
                 System.out.printf("Server %d busy. Updated svc: %.3f, Updated end time: %.3f%n",
