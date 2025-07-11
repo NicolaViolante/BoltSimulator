@@ -942,11 +942,6 @@ public class SimpleSystem implements Sistema {
                     }
                 }
 
-                System.out.println(String.format(
-                        "DEBUG: batchNumber=%d, jobObservations=%d, idxMin=%d",
-                        batchNumber, jobObservations, idxMin));
-
-
                 if (globalWriter != null) {
                     try {
                         String line = String.join(",",
@@ -962,8 +957,6 @@ public class SimpleSystem implements Sistema {
                         );
                         globalWriter.write(line);
                         globalWriter.newLine();
-                        count++;
-                        System.out.println("global writer: " + count);
                     } catch (IOException e) {
                         System.err.println("Errore scrittura CSV sistema batch " + batchNumber + ": " + e.getMessage());
                     }

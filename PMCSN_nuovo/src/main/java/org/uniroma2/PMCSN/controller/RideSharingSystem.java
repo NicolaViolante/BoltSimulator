@@ -750,6 +750,24 @@ public class RideSharingSystem implements Sistema {
             }
         }
 
+        Path globalPath = Paths.get(baseDir, "global.csv");
+        BufferedWriter globalWriter = null;
+        try {
+            globalWriter = Files.newBufferedWriter(
+                    globalPath,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
+            // Header: batch + solo medie cumulative
+            globalWriter.write("SimulationType,Batch,"
+                    + "E[Ts]_cum,E[Tq]_cum,E[S]_cum,"
+                    + "E[N]_cum,E[Nq]_cum,rho_cum,lambda_cum");
+            globalWriter.newLine();
+        } catch (IOException e) {
+            System.err.println("Impossibile inizializzare CSV per sistema : " + e.getMessage());
+        }
+
         // Liste per accumulare i valori batch‑per‑batch
         List<List<Double>> respTimeMeansByNode    = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
         List<List<Double>> queueTimeMeansByNode   = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
@@ -821,6 +839,14 @@ public class RideSharingSystem implements Sistema {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
 
+                double ETs_glob   = 0;
+                double ETq_glob   = 0;
+                double ES_glob    = 0;
+                double ENs_glob   = 0;
+                double ENq_glob   = 0;
+                double rho_glob   = 0;
+                double lambda_glob = 0;
+
                 for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
                     Area     a         = nodes.get(i).getAreaObject();
                     MsqSum[] ss        = nodes.get(i).getMsqSums();
@@ -860,6 +886,14 @@ public class RideSharingSystem implements Sistema {
                         double rho_cum   = computeMean(utilizationByNode.get(i));
                         double lambda_cum= computeMean(lambdaByNode.get(i));
 
+                        ETs_glob   += ETs_cum;
+                        ETq_glob   += ETq_cum;
+                        ES_glob    += ES_cum;
+                        ENs_glob   += ENs_cum;
+                        ENq_glob   += ENq_cum;
+                        rho_glob   += rho_cum;
+                        lambda_glob += lambda_cum;
+
                         // 4) Scrittura solo dei cumulativi
                         BufferedWriter w = writers.get(i);
                         if (w != null) {
@@ -885,6 +919,27 @@ public class RideSharingSystem implements Sistema {
                     }
                 }
 
+
+                if (globalWriter != null) {
+                    try {
+                        String line = String.join(",",
+                                "INFINITE",
+                                Integer.toString(batchNumber),
+                                String.format(Locale.US, "%.6f", ETs_glob/3),
+                                String.format(Locale.US, "%.6f", ETq_glob/3),
+                                String.format(Locale.US, "%.6f", ES_glob/3),
+                                String.format(Locale.US, "%.6f", ENs_glob/3),
+                                String.format(Locale.US, "%.6f", ENq_glob/3),
+                                String.format(Locale.US, "%.6f", rho_glob/3),
+                                String.format(Locale.US, "%.6f", lambda_glob/3)
+                        );
+                        globalWriter.write(line);
+                        globalWriter.newLine();
+                    } catch (IOException e) {
+                        System.err.println("Errore scrittura CSV sistema batch " + batchNumber + ": " + e.getMessage());
+                    }
+                }
+
                 // Reset statistiche e snapshot per il batch successivo
                 for (Node n : nodes) n.resetStatistics();
                 Arrays.fill(areaNodeSnap,   0.0);
@@ -906,6 +961,15 @@ public class RideSharingSystem implements Sistema {
                 } catch (IOException e) {
                     System.err.println("Errore chiusura CSV nodo: " + e.getMessage());
                 }
+            }
+        }
+
+        // Chiudo anche il writer globale
+        if (globalWriter != null) {
+            try {
+                globalWriter.close();
+            } catch (IOException e) {
+                System.err.println("Errore chiusura global.csv: " + e.getMessage());
             }
         }
 
