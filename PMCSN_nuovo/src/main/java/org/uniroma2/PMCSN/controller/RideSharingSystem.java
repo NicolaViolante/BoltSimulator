@@ -925,13 +925,13 @@ public class RideSharingSystem implements Sistema {
                         String line = String.join(",",
                                 "INFINITE",
                                 Integer.toString(batchNumber),
-                                String.format(Locale.US, "%.6f", ETs_glob/3),
-                                String.format(Locale.US, "%.6f", ETq_glob/3),
-                                String.format(Locale.US, "%.6f", ES_glob/3),
-                                String.format(Locale.US, "%.6f", ENs_glob/3),
-                                String.format(Locale.US, "%.6f", ENq_glob/3),
-                                String.format(Locale.US, "%.6f", rho_glob/3),
-                                String.format(Locale.US, "%.6f", lambda_glob/3)
+                                String.format(Locale.US, "%.6f", ETs_glob/4),
+                                String.format(Locale.US, "%.6f", ETq_glob/4),
+                                String.format(Locale.US, "%.6f", ES_glob/4),
+                                String.format(Locale.US, "%.6f", ENs_glob/4),
+                                String.format(Locale.US, "%.6f", ENq_glob/4),
+                                String.format(Locale.US, "%.6f", rho_glob/4),
+                                String.format(Locale.US, "%.6f", lambda_glob/4)
                         );
                         globalWriter.write(line);
                         globalWriter.newLine();
