@@ -85,23 +85,35 @@ def plot_job_counts(csv_path, out_dir, time_col='Time', jobs_col='ENs'):
     plt.close(fig)
     print(f"– saved: {out_path}")
 
-def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETs'):
+def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETs', markers=20, log_scale=False):
     df = pd.read_csv(csv_path)
     df = df.sort_values(by=batch_col)
 
+    # Calcolo markevery per ridurre il numero di marker visibili
+    total_points = len(df)
+    markevery = max(1, total_points // markers)
+
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(df[batch_col], df[response_col], marker='o', linestyle='-')
+    ax.plot(df[batch_col], df[response_col], marker='o', linestyle='-', markevery=markevery)
 
     ax.set_title("Andamento ETs Cumulativo per Batch")
     ax.set_xlabel(batch_col)
     ax.set_ylabel(response_col)
     ax.grid(True)
 
+    if log_scale:
+        ax.set_yscale('log')
+        ax.set_title("Andamento ETs Cumulativo per Batch (Scala Log)")
+
     ax.xaxis.set_major_locator(dynamic_locator(df[batch_col], n_bins=10, min_step=1))
-    ax.yaxis.set_major_locator(dynamic_locator(df[response_col], n_bins=10, min_step=0.1))
+    # Impostiamo min_step=0 per la scala logaritmica
+    y_min_step = 0.1 if not log_scale else 0.0
+    ax.yaxis.set_major_locator(dynamic_locator(df[response_col], n_bins=10, min_step=y_min_step))
 
     fig.tight_layout()
-    out_path = os.path.join(out_dir, 'infinite_response_times.png')
+    suffix = '_log' if log_scale else ''
+    filename = f'infinite_response_times{suffix}.png'
+    out_path = os.path.join(out_dir, filename)
     fig.savefig(out_path)
     plt.close(fig)
     print(f"– saved: {out_path}")
@@ -131,8 +143,10 @@ if __name__ == '__main__':
         plot_job_counts(csv_path, out_dir)
         if len(sys.argv) > 3:
             plot_infinite_response(sys.argv[3], out_dir)
+            plot_infinite_response(sys.argv[3], out_dir, log_scale=True)
     elif is_batch_based:
         plot_infinite_response(csv_path, out_dir)
+        plot_infinite_response(csv_path, out_dir, log_scale=True)
     else:
         print(f"Errore: le colonne di {csv_path} non corrispondono: {cols}")
         sys.exit(1)

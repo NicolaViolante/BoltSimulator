@@ -761,8 +761,10 @@ public class SimpleSystem implements Sistema {
                 );
                 // Header: batch + solo medie cumulative
                 w.write("SimulationType,Batch,"
-                        + "E[Ts]_cum,E[Tq]_cum,E[S]_cum,"
-                        + "E[N]_cum,E[Nq]_cum,rho_cum,lambda_cum");
+                        + "ETs,ETq,ES,"
+                        + "EN,ENq,rho,lambda");
+                w.newLine();
+                w.write("INFINITE,0,0,0,0,0,0,0,0");
                 w.newLine();
                 writers.add(w);
             } catch (IOException e) {
@@ -782,8 +784,10 @@ public class SimpleSystem implements Sistema {
             );
             // Header: batch + solo medie cumulative
             globalWriter.write("SimulationType,Batch,"
-                    + "E[Ts]_cum,E[Tq]_cum,E[S]_cum,"
-                    + "E[N]_cum,E[Nq]_cum,rho_cum,lambda_cum");
+                    + "ETs,ETq,ES,"
+                    + "EN,ENq,rho,lambda");
+            globalWriter.newLine();
+            globalWriter.write("INFINITE,0,0,0,0,0,0,0,0");
             globalWriter.newLine();
         } catch (IOException e) {
             System.err.println("Impossibile inizializzare CSV per sistema : " + e.getMessage());
@@ -928,7 +932,7 @@ public class SimpleSystem implements Sistema {
                             try {
                                 String line = String.join(",",
                                         "INFINITE",
-                                        Integer.toString(batchNumber),
+                                        Integer.toString(batchNumber+1),
                                         String.format(Locale.US, "%.6f", ETs_cum),
                                         String.format(Locale.US, "%.6f", ETq_cum),
                                         String.format(Locale.US, "%.6f", ES_cum),
@@ -951,7 +955,7 @@ public class SimpleSystem implements Sistema {
                     try {
                         String line = String.join(",",
                                 "INFINITE",
-                                Integer.toString(batchNumber),
+                                Integer.toString(batchNumber+1),
                                 String.format(Locale.US, "%.6f", ETs_glob/3),
                                 String.format(Locale.US, "%.6f", ETq_glob/3),
                                 String.format(Locale.US, "%.6f", ES_glob/3),
