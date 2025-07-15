@@ -818,6 +818,7 @@ public class SimpleSystem implements Sistema {
         int batchNumber     = 0;
         int jobObservations = 0;
         int count=0;
+        boolean isWarmingUp = true;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -847,6 +848,10 @@ public class SimpleSystem implements Sistema {
                     idxMin = i;
                 }
             }
+
+//            if (tmin>WARM_UP){
+//                isWarmingUp = false;
+//            }
 
             // Integro e processo evento
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
@@ -1029,6 +1034,28 @@ public class SimpleSystem implements Sistema {
                     lambdaByNode.get(i)
             ));
         }
+
+
+        // Calcolo e stampa autocorrelazione per ogni centro
+        for (int i = 0; i < NODES; i++) {
+            String centerName = "Center" + i;
+            List<BatchMetric> allBatchMetrics = List.of(
+                    new BatchMetric("E[Ts]", respTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Tq]", queueTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Si]", serviceTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Ns]", systemPopMeansByNode.get(i)),
+                    new BatchMetric("E[Nq]", queuePopMeansByNode.get(i)),
+                    new BatchMetric("ρ", utilizationByNode.get(i)),
+                    new BatchMetric("λ", lambdaByNode.get(i))
+            );
+            for (BatchMetric batchMetric : allBatchMetrics) {
+                double acfValue = Math.abs(acf(batchMetric.values));
+                batchMetric.setAcfValue(acfValue);
+            }
+            printBatchStatisticsResult(centerName, allBatchMetrics, BATCHSIZE, NUMBATCHES);
+        }
+
+
         List<Verification.VerificationResult> verificationResults =
                 Verification.verifyConfidenceIntervals(
                         "INFINITE_SIMULATION",
@@ -1191,6 +1218,53 @@ public class SimpleSystem implements Sistema {
                 }
             }
             directory.delete();
+        }
+    }
+
+
+    public static double acf(List<Double> data) {
+        int k = data.size();
+        double mean = 0.0;
+
+        // Calculate the mean of the batch means
+        for (double value : data) {
+            mean += value;
+        }
+        mean /= k;
+
+        double numerator = 0.0;
+        double denominator = 0.0;
+
+        // Compute the numerator and denominator for the lag-1 autocorrelation
+        for (int j = 0; j < k - 1; j++) {
+            numerator += (data.get(j) - mean) * (data.get(j + 1) - mean);
+        }
+        for (int j = 0; j < k; j++) {
+            denominator += Math.pow(data.get(j) - mean, 2);
+        }
+        return numerator / denominator;
+    }
+
+
+    public static void printBatchStatisticsResult(String centerName, List<BatchMetric> batchMetrics, int batchSize, int numBatches) {
+        System.out.println(BRIGHT_RED + "\n\n*******************************************************************************************************");
+        System.out.println("AUTOCORRELATION VALUES FOR " + centerName + " [B:" + batchSize + "|K:" + numBatches + "]");
+        System.out.println("*******************************************************************************************************" + RESET);
+        for (BatchMetric batchMetric : batchMetrics) {
+            String metricName = batchMetric.getName();
+            double value = batchMetric.getAcfValue();
+            String color = getAcfColor(value);
+            System.out.printf("%s: %s%.4f%s%n", metricName, color, value, RESET);
+        }
+        System.out.println(BRIGHT_RED + "*******************************************************************************************************" + RESET);
+    }
+
+
+    private static String getAcfColor(double value) {
+        if (Math.abs(value) > 0.2) {
+            return BRIGHT_RED;
+        } else {
+            return BRIGHT_GREEN;
         }
     }
 }

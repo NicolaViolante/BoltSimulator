@@ -56,13 +56,6 @@ public class Main {
                 preStdNs, preStdNq, preStdRho, preStdLambda
         );
 
-        // 6) Sovrascrivi simulation.replicas e riscrivi il file
-//        props.setProperty("simulation.replicas", Long.toString(computedReplicas));
-//        try (OutputStream out = new FileOutputStream(configFile)) {
-//            props.store(out, "Aggiornato simulation.replicas in base al CI (overall)");
-//        }
-//        System.out.println(">> simulation.replicas impostato a: " + computedReplicas);
-
         // 7) Scelta del tipo di sistema
         System.out.println("---- Choose type of system ----");
         System.out.println("0 - Simple ");

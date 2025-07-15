@@ -28,10 +28,10 @@ import java.util.Locale;
 
 public class RideSharingSystem implements Sistema {
 
-    private static final String BRIGHT_GREEN = "";
-    private static final Object RESET = "";
-    private static final String BRIGHT_RED = "" ;
-    private static final String BRIGHT_YELLOW = "";
+    private static final String RESET         = "\u001B[0m";
+    private static final String BRIGHT_GREEN  = "\u001B[92m";
+    private static final String BRIGHT_YELLOW = "\u001B[93m";
+    private static final String BRIGHT_RED    = "\u001B[91m";
     /*Case Finite*/
     private final int SIMPLE_NODES;
     private final int RIDE_NODES;
@@ -1005,6 +1005,28 @@ public class RideSharingSystem implements Sistema {
                     lambdaByNode.get(i)
             ));
         }
+
+
+        // Calcolo e stampa autocorrelazione per ogni centro
+        for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
+            String centerName = "Center" + i;
+            List<BatchMetric> allBatchMetrics = List.of(
+                    new BatchMetric("E[Ts]", respTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Tq]", queueTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Si]", serviceTimeMeansByNode.get(i)),
+                    new BatchMetric("E[Ns]", systemPopMeansByNode.get(i)),
+                    new BatchMetric("E[Nq]", queuePopMeansByNode.get(i)),
+                    new BatchMetric("ρ", utilizationByNode.get(i)),
+                    new BatchMetric("λ", lambdaByNode.get(i))
+            );
+            for (BatchMetric batchMetric : allBatchMetrics) {
+                double acfValue = Math.abs(acf(batchMetric.values));
+                batchMetric.setAcfValue(acfValue);
+            }
+            printBatchStatisticsResult(centerName, allBatchMetrics, BATCHSIZE, NUMBATCHES);
+        }
+
+
         List<Verification.VerificationResult> verificationResults =
                 Verification.verifyConfidenceIntervals(
                         "INFINITE_SIMULATION",
@@ -1030,6 +1052,52 @@ public class RideSharingSystem implements Sistema {
                     ms.meanUtilization,
                     ms.lambda
             );
+        }
+    }
+
+
+    public static double acf(List<Double> data) {
+        int k = data.size();
+        double mean = 0.0;
+
+        // Calculate the mean of the batch means
+        for (double value : data) {
+            mean += value;
+        }
+        mean /= k;
+
+        double numerator = 0.0;
+        double denominator = 0.0;
+
+        // Compute the numerator and denominator for the lag-1 autocorrelation
+        for (int j = 0; j < k - 1; j++) {
+            numerator += (data.get(j) - mean) * (data.get(j + 1) - mean);
+        }
+        for (int j = 0; j < k; j++) {
+            denominator += Math.pow(data.get(j) - mean, 2);
+        }
+        return numerator / denominator;
+    }
+
+
+    public static void printBatchStatisticsResult(String centerName, List<BatchMetric> batchMetrics, int batchSize, int numBatches) {
+        System.out.println(BRIGHT_RED + "\n\n*******************************************************************************************************");
+        System.out.println("AUTOCORRELATION VALUES FOR " + centerName + " [B:" + batchSize + "|K:" + numBatches + "]");
+        System.out.println("*******************************************************************************************************" + RESET);
+        for (BatchMetric batchMetric : batchMetrics) {
+            String metricName = batchMetric.getName();
+            double value = batchMetric.getAcfValue();
+            String color = getAcfColor(value);
+            System.out.printf("%s: %s%.4f%s%n", metricName, color, value, RESET);
+        }
+        System.out.println(BRIGHT_RED + "*******************************************************************************************************" + RESET);
+    }
+
+    private static String getAcfColor(double value) {
+        if (Math.abs(value) > 0.2) {
+            return BRIGHT_RED;
+        } else {
+            return BRIGHT_GREEN;
         }
     }
 

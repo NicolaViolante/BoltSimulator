@@ -16,4 +16,13 @@ public class BatchMetric {
     public String getName() {
         return name;
     }
+
+    public void setAcfValue(double acfValue) {
+        this.acfValue = acfValue;
+    }
+
+    public double getAcfValue() {
+        return acfValue;
+    }
+
 }
