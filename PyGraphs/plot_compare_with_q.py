@@ -89,9 +89,6 @@ def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='E
     df = pd.read_csv(csv_path)
     df = df.sort_values(by=batch_col)
 
-    # Calcolo markevery per ridurre il numero di marker visibili
-    total_points = len(df)
-
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(df[batch_col], df[response_col], linestyle='-')
 
