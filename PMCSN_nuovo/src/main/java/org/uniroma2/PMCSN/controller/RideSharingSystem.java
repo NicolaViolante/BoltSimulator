@@ -63,6 +63,9 @@ public class RideSharingSystem implements Sistema {
     public void runFiniteSimulation() {
         final double STOP = this.STOP;
         String baseDir = "csvFilesIntervals";
+        //Rng setting the seed
+        long[] seeds = new long[1024];
+        seeds[1] = 123456789L;
         Rngs rngs = new Rngs();
 
         List<List<Long>> jobsProcessedByNode = new ArrayList<>(SIMPLE_NODES+RIDE_NODES);
@@ -101,7 +104,7 @@ public class RideSharingSystem implements Sistema {
         System.out.println("=== Finite Simulation ===");
 
         for (int rep = 1; rep <= REPLICAS; rep++) {
-            rngs.plantSeeds(rep);
+            rngs.plantSeeds(seeds[rep]);
             List<Node> localNodes = init(rngs);
             double nextReportTime = REPORTINTERVAL;
             double lastArrivalTime = 0.0;
@@ -232,6 +235,10 @@ public class RideSharingSystem implements Sistema {
                 n.resetStatistics();
                 // eventualmente resettare anche aree se necessario
             }
+
+            // Generating next seed
+            rngs.selectStream(0);
+            seeds[rep + 1] = rngs.getSeed();
         }
 
         // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
@@ -313,196 +320,6 @@ public class RideSharingSystem implements Sistema {
         }
         System.out.printf("Media totale jobs processati (approssimazione per difetto): %.0f%n", totalAvgJobsProcessed);
     }
-
-
-    /*@Override
-    public void runInfiniteSimulation() {
-        String baseDir = "csvFilesBatch";
-
-        double[] ETs = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] ETq = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] ES = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] ENs = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] ENq = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] ENS = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] lambda = new double[SIMPLE_NODES+RIDE_NODES];
-        double[] rho = new double[SIMPLE_NODES+RIDE_NODES];
-
-        // Inizializza liste per ogni centro
-        List<List<Long>> jobsProcessedByNode = initEmptyLongLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> respTimeMeansByNode    = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> queueTimeMeansByNode   = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> serviceTimeMeansByNode = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> systemPopMeansByNode   = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> queuePopMeansByNode    = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> utilizationByNode      = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-        List<List<Double>> lambdaByNode           = initEmptyDoubleLists(SIMPLE_NODES + RIDE_NODES);
-
-        double[] areaNodeSnap   = new double[SIMPLE_NODES + RIDE_NODES];
-        double[] areaQueueSnap  = new double[SIMPLE_NODES + RIDE_NODES];
-        double[] areaServSnap   = new double[SIMPLE_NODES + RIDE_NODES];
-        long[]   jobsServedSnap = new long[SIMPLE_NODES + RIDE_NODES];
-
-        double clock;
-        double startTimeBatch = 0.0;
-        double endTimeBatch;
-        double lastArrTime = 0.0;
-        double lastCompTime = 0.0;
-        int batchNumber = 0;
-        int jobObservations = 0;
-
-        Rngs rngs = new Rngs();
-        rngs.plantSeeds(SEED);
-        List<Node> nodes = init(rngs);
-
-        // Snap iniziale per le aree e job serviti
-        for (int i = 0; i < nodes.size(); i++) {
-            Area a = nodes.get(i).getAreaObject();
-            MsqSum[] ss = nodes.get(i).getMsqSums();
-            areaNodeSnap[i]   = a.getNodeArea();
-            areaQueueSnap[i]  = a.getQueueArea();
-            areaServSnap[i]   = a.getServiceArea();
-            jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
-        }
-
-        // Ciclo principale di simulazione a batch
-        while (batchNumber < NUMBATCHES) {
-            // Avanzamento simulazione al prossimo evento
-            double tmin = Double.POSITIVE_INFINITY;
-            int idxMin = -1;
-            for (int i = 0; i < nodes.size(); i++) {
-                double t = nodes.get(i).peekNextEventTime();
-                if (t < tmin) {
-                    tmin = t;
-                    idxMin = i;
-                }
-            }
-
-            for (Node n : nodes) n.integrateTo(tmin);
-            clock = tmin;
-            nodes.get(idxMin).processNextEvent(tmin);
-
-            if (idxMin == 0) {
-                lastArrTime = Math.max(lastArrTime, tmin);
-            } else {
-                lastCompTime = Math.max(lastCompTime, tmin);
-                jobObservations++;
-            }
-
-            // Fine batch: calcolo statistiche
-            if (jobObservations == BATCHSIZE) {
-                endTimeBatch = clock;
-
-                for (int i = 0; i < nodes.size(); i++) {
-                    Area a = nodes.get(i).getAreaObject();
-                    MsqSum[] ss = nodes.get(i).getMsqSums();
-                    long jobsNow = Arrays.stream(ss).mapToLong(s -> s.served).sum();
-
-                    long deltaJobs = jobsNow - jobsServedSnap[i];
-                    double batchTime = endTimeBatch - startTimeBatch;
-
-                    if (deltaJobs > 0 && batchTime > 0) {
-                        double deltaNodeArea  = a.getNodeArea()   - areaNodeSnap[i];
-                        double deltaQueueArea = a.getQueueArea()  - areaQueueSnap[i];
-                        double deltaServArea  = a.getServiceArea() - areaServSnap[i];
-                        int numServers = ss.length - 1;
-
-                        double ETs = deltaNodeArea / deltaJobs;
-                        double ETq = deltaQueueArea / deltaJobs;
-                        double ES  = deltaServArea / deltaJobs;
-                        double ENs = deltaNodeArea / batchTime;
-                        double ENq = deltaQueueArea / batchTime;
-                        double ENS = deltaServArea / batchTime;
-                        double lambda = deltaJobs / batchTime;
-                        double rho = (lambda * ES) / numServers;
-
-                        respTimeMeansByNode.get(i).add(ETs);
-                        queueTimeMeansByNode.get(i).add(ETq);
-                        serviceTimeMeansByNode.get(i).add(ES);
-                        systemPopMeansByNode.get(i).add(ENs);
-                        queuePopMeansByNode.get(i).add(ENq);
-                        utilizationByNode.get(i).add(rho);
-                        lambdaByNode.get(i).add(lambda);
-
-                        IntervalCSVGenerator.writeIntervalData(true, batchNumber, i, endTimeBatch,
-                                ETs, ENs, ETq, ENq, ES, ENS, rho, baseDir);
-                    }
-
-                    // Aggiorna snapshot
-                    areaNodeSnap[i] = a.getNodeArea();
-                    areaQueueSnap[i] = a.getQueueArea();
-                    areaServSnap[i] = a.getServiceArea();
-                    jobsServedSnap[i] = jobsNow;
-                }
-
-                writeGlobalInterval(batchNumber, endTimeBatch, nodes, baseDir);
-
-                // Reset statistiche batch e avanza
-                for (Node n : nodes) n.resetStatistics();
-                startTimeBatch = endTimeBatch;
-                batchNumber++;
-                jobObservations = 0;
-            }
-        }
-
-        // === Calcolo statistiche cumulative e verifica ===
-        List<MeanStatistics> meanStatsList = new ArrayList<>();
-        for (int i = 0; i < nodes.size(); i++) {
-            meanStatsList.add(new MeanStatistics(
-                    "Center" + i,
-                    computeMean(respTimeMeansByNode.get(i)),
-                    computeMean(serviceTimeMeansByNode.get(i)),
-                    computeMean(queueTimeMeansByNode.get(i)),
-                    computeMean(lambdaByNode.get(i)),
-                    computeMean(systemPopMeansByNode.get(i)),
-                    computeMean(utilizationByNode.get(i)),
-                    computeMean(queuePopMeansByNode.get(i))
-            ));
-        }
-
-        List<AnalyticalComputation.AnalyticalResult> analyticalResults =
-                AnalyticalComputation.computeAnalyticalResults("INFINITE_SIMULATION");
-        List<Comparison.ComparisonResult> comparisonResults =
-                Comparison.compareResults("INFINITE_SIMULATION", analyticalResults, meanStatsList);
-
-        List<ConfidenceInterval> ciList = new ArrayList<>();
-        for (int i = 0; i < nodes.size(); i++) {
-            ciList.add(new ConfidenceInterval(
-                    respTimeMeansByNode.get(i),
-                    queueTimeMeansByNode.get(i),
-                    serviceTimeMeansByNode.get(i),
-                    systemPopMeansByNode.get(i),
-                    queuePopMeansByNode.get(i),
-                    utilizationByNode.get(i),
-                    lambdaByNode.get(i)
-            ));
-        }
-
-        List<Verification.VerificationResult> verificationResults =
-                Verification.verifyConfidenceIntervals("INFINITE_SIMULATION", meanStatsList, comparisonResults, ciList);
-
-        // === Output finale ===
-        System.out.println("=== RISULTATI DI VERIFICA ===");
-        for (Verification.VerificationResult result : verificationResults) printVerificationResult(result);
-
-        System.out.println("=== STATISTICHE MEDIE CUMULATIVE ===");
-        for (MeanStatistics ms : meanStatsList) {
-            System.out.printf(
-                    "%s: E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
-                    ms.centerName, ms.meanResponseTime, ms.meanQueueTime, ms.meanServiceTime,
-                    ms.meanSystemPopulation, ms.meanQueuePopulation, ms.meanUtilization, ms.lambda
-            );
-        }
-
-        System.out.println("=== NUMERO MEDIO DI JOB PROCESSATI ===");
-        double totalAvgJobsProcessed = 0.0;
-        for (int j = 0; j < jobsProcessedByNode.size(); j++) {
-            List<Long> jobsList = jobsProcessedByNode.get(j);
-            double avgJobs = jobsList.stream().mapToLong(Long::longValue).average().orElse(0.0);
-            totalAvgJobsProcessed += Math.floor(avgJobs);
-        }
-        System.out.printf("Media totale jobs processati (approssimazione per difetto): %.0f%n", totalAvgJobsProcessed);
-    }*/
 
     private static void printVerificationResult(Verification.VerificationResult result) {
         String within  = BRIGHT_GREEN + "within" + RESET;

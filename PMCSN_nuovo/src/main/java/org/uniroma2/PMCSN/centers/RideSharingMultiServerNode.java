@@ -117,7 +117,7 @@ public class RideSharingMultiServerNode implements Node {
             arr.postiRichiesti = getNumPosti();
             event.set(ARRIVAL, arr);
 
-            rng.selectStream(2);
+            rng.selectStream(4);
             double p = rng.random();
             if (p < P_EXIT) {
                 numberJobInSystem--;
@@ -221,7 +221,7 @@ public class RideSharingMultiServerNode implements Node {
     }
 
     private int getNumPosti() {
-        rng.selectStream(4);
+        rng.selectStream(9);
         double r = rng.random();
         if (r < 0.4) return 1;
         if (r < 0.7) return 2;
@@ -281,7 +281,7 @@ public class RideSharingMultiServerNode implements Node {
         int bestActive = -1;
         double bestCapActive = -1;
 
-        rng.selectStream(3);
+        rng.selectStream(7);
         for (int i = 1; i <= RIDESERVERS; i++) {
             if (event.get(i).x == 1
                     && event.get(i).capacitaRimanente>= firstReq.postiRichiesti
@@ -301,7 +301,7 @@ public class RideSharingMultiServerNode implements Node {
 
         // 3. FALLBACK interno: best‑fit tra server *inattivi*
         int bestIdle = -1; double bestCapIdle = -1;
-        rng.selectStream(4);
+        rng.selectStream(8);
         for (int i = 1; i <= RIDESERVERS; i++) {
             if (event.get(i).x == 0
                     && event.get(i).capacitaRimanente >= firstReq.postiRichiesti

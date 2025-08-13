@@ -122,7 +122,7 @@ public class RideSharingMultiServerNodeSimple implements Node {
                 newArr.x = 1;
                 eventList.set(ARRIVO_ESTERNO, newArr);
 
-                rng.selectStream(2);
+                rng.selectStream(4);
                 if (rng.random() < P_EXIT) {
                     numberJobInSystem--;
                     return -1;

@@ -133,7 +133,7 @@ public class SimpleMultiServerNode implements Node {
                 arr.t = distrs.getNextArrivalTimeSimpleCenter(rng, system, centerIndex, clock.current);
                 /*tempo del successivo arrivo*/
                 arr.x = 1;
-                rng.selectStream(2);
+                rng.selectStream(5d);
                 double rnd = rng.random();
                 //System.out.printf("[DEBUG] RNG per uscita: %.4f\n", rnd);
                 if (rnd < P_EXIT) {

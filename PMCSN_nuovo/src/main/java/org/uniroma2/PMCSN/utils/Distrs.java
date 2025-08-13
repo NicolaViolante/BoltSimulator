@@ -12,7 +12,7 @@ public class Distrs {
     private final ConfigurationManager config = new ConfigurationManager();
 
     public double getNextArrivalTimeSimpleCenter(Rngs r, Sistema system, int centerIndex, double sarrival) {
-        r.selectStream(0);
+        r.selectStream(1);
         double lambda = config.getDouble("simulation","lambdasimple");
 
         if(system instanceof SimpleSystem) {
@@ -36,7 +36,7 @@ public class Distrs {
     }
 
     public double getNextArrivalTimeRideSharing(Rngs r, double sarrival) {
-        r.selectStream(0);
+        r.selectStream(1);
         double lambda = config.getDouble("simulation","lambdaride") * config.getDouble("simulation","pride") ;
         sarrival += exponential(1/lambda, r);
         return sarrival;
@@ -45,7 +45,7 @@ public class Distrs {
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeSimple(Rngs r) {
-        r.selectStream(1);
+        r.selectStream(2);
       double esi = config.getDouble("simulation","esi");
 //        double alpha, beta;
 //        double a = 2;
@@ -61,7 +61,7 @@ public class Distrs {
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeRideSharing(Rngs r) {
-        r.selectStream(1);
+        r.selectStream(3);
         double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
