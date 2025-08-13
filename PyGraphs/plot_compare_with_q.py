@@ -85,16 +85,15 @@ def plot_job_counts(csv_path, out_dir, time_col='Time', jobs_col='ENs'):
     plt.close(fig)
     print(f"– saved: {out_path}")
 
-def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETs', markers=20, log_scale=False):
+def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETs', log_scale=False):
     df = pd.read_csv(csv_path)
     df = df.sort_values(by=batch_col)
 
     # Calcolo markevery per ridurre il numero di marker visibili
     total_points = len(df)
-    markevery = max(1, total_points // markers)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(df[batch_col], df[response_col], marker='o', linestyle='-', markevery=markevery)
+    ax.plot(df[batch_col], df[response_col], linestyle='-')
 
     ax.set_title("Andamento ETs Cumulativo per Batch")
     ax.set_xlabel(batch_col)
