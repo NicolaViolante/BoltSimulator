@@ -16,7 +16,6 @@ public class SimpleMultiServerNode implements Node {
     // RNG e config
     private final Rngs rng;
 
-    // orologio e raccolta aree
     private final MsqTime clock = new MsqTime();
     private final Area areaCollector = new Area();
     private final Distrs distrs = new Distrs();
@@ -133,7 +132,7 @@ public class SimpleMultiServerNode implements Node {
                 arr.t = distrs.getNextArrivalTimeSimpleCenter(rng, system, centerIndex, clock.current);
                 /*tempo del successivo arrivo*/
                 arr.x = 1;
-                rng.selectStream(5d);
+                rng.selectStream(5);
                 double rnd = rng.random();
                 //System.out.printf("[DEBUG] RNG per uscita: %.4f\n", rnd);
                 if (rnd < P_EXIT) {
@@ -297,8 +296,6 @@ public class SimpleMultiServerNode implements Node {
         return this.numberOfServersInTheCenter;
     }
 
-
-    // reset all'inizio di ogni batch
     public void resetLastArrivalTimeInBatch() {
         lastArrivalTimeInBatch = 0.0;
     }

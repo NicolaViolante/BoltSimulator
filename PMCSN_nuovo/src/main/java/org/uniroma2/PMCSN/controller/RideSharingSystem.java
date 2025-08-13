@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+
 public class RideSharingSystem implements Sistema {
 
     private static final String RESET         = "\u001B[0m";
@@ -33,6 +34,7 @@ public class RideSharingSystem implements Sistema {
     private static final String BRIGHT_YELLOW = "\u001B[93m";
     private static final String BRIGHT_RED    = "\u001B[91m";
     /*Case Finite*/
+    private static final double WARM_UP = 1000;
     private final int SIMPLE_NODES;
     private final int RIDE_NODES;
     private final int REPLICAS ;
@@ -458,18 +460,6 @@ public class RideSharingSystem implements Sistema {
         return localNodes;
     }
 
-    private List<List<Long>> initEmptyLongLists(int count) {
-        List<List<Long>> list = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) list.add(new ArrayList<>());
-        return list;
-    }
-
-    private List<List<Double>> initEmptyDoubleLists(int count) {
-        List<List<Double>> list = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) list.add(new ArrayList<>());
-        return list;
-    }
-
     // utilitario per sommare tutti i served in un array di MsqSum
     private long sumsTotalServed(MsqSum[] sums) {
         long tot = 0;
@@ -617,6 +607,7 @@ public class RideSharingSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
+        boolean isWarmingUp = true;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -651,8 +642,28 @@ public class RideSharingSystem implements Sistema {
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
 
-            if (idxMin != 0) {
-                jobObservations++;
+            // Attiviamo warm-up
+            if (isWarmingUp) {
+                if (clock >= WARM_UP) {
+                    isWarmingUp = false;
+                    System.out.println("Fine warm-up a t=" + clock);
+                    // Reset snapshot e statistiche per iniziare raccolta batch post warm-up
+                    for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
+                        Area a = nodes.get(i).getAreaObject();
+                        MsqSum[] ss = nodes.get(i).getMsqSums();
+                        areaNodeSnap[i]   = a.getNodeArea();
+                        areaQueueSnap[i]  = a.getQueueArea();
+                        areaServSnap[i]   = a.getServiceArea();
+                        jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
+                    }
+                    startTimeBatch = clock;
+                    jobObservations = 0;
+                    continue; // salta la raccolta batch finché non finisce warm-up
+                }
+            } else {
+                if (idxMin != 0) {
+                    jobObservations++;
+                }
             }
 
             // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV

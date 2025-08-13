@@ -28,6 +28,7 @@ import static org.uniroma2.PMCSN.utils.IntervalCSVGenerator.writeGlobalInterval;
 
 public class SimpleSystem implements Sistema {
 
+    private static final double WARM_UP = 1000;
     /*Case Finite*/
     private final int NODES;
     private final int REPLICAS;
@@ -401,7 +402,6 @@ public class SimpleSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
-        int count=0;
         boolean isWarmingUp = true;
 
         // Inizializzo RNG e nodi
@@ -433,20 +433,35 @@ public class SimpleSystem implements Sistema {
                 }
             }
 
-//            if (tmin>WARM_UP){
-//                isWarmingUp = false;
-//            }
-
             // Integro e processo evento
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
 
-            if (idxMin != 0) {
-                jobObservations++;
+            // Attiviamo warm-up
+            if (isWarmingUp) {
+                if (clock >= WARM_UP) {
+                    isWarmingUp = false;
+                    System.out.println("Fine warm-up a t=" + clock);
+                    // Reset snapshot e statistiche per iniziare raccolta batch post warm-up
+                    for (int i = 0; i < NODES; i++) {
+                        Area a = nodes.get(i).getAreaObject();
+                        MsqSum[] ss = nodes.get(i).getMsqSums();
+                        areaNodeSnap[i]   = a.getNodeArea();
+                        areaQueueSnap[i]  = a.getQueueArea();
+                        areaServSnap[i]   = a.getServiceArea();
+                        jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
+                    }
+                    startTimeBatch = clock;
+                    jobObservations = 0;
+                    continue; // salta la raccolta batch finché non finisce warm-up
+                }
+            } else {
+                if (idxMin != 0) {
+                    jobObservations++;
+                }
             }
 
-            // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
             if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
@@ -667,13 +682,6 @@ public class SimpleSystem implements Sistema {
             );
         }
     }
-
-
-
-
-
-
-
 
     private static void printVerificationResult(Verification.VerificationResult result) {
         String within  = BRIGHT_GREEN + "within" + RESET;
