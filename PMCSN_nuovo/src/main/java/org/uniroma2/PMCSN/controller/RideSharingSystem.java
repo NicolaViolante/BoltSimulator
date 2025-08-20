@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import static org.uniroma2.PMCSN.utils.IntervalCSVGenerator.writeGlobalInterval;
+
 
 public class RideSharingSystem implements Sistema {
 
@@ -109,6 +111,16 @@ public class RideSharingSystem implements Sistema {
 
             List<Node> localNodes = init(rngs);
             rngs.plantSeeds(seedForRep);
+            for (int i = 0; i < SIMPLE_NODES+RIDE_NODES; i++) {
+                IntervalCSVGenerator.writeIntervalData(
+                        true, seedForRep, i, 0,
+                        0, 0, 0, 0,
+                        0, 0, 0,
+                        baseDir
+                );
+            }
+            writeGlobalInterval(seedForRep, 0, localNodes, baseDir);
+
             double nextReportTime = REPORTINTERVAL;
             double lastArrivalTime = 0.0;
             double lastCompletionTime = 0.0;
@@ -487,11 +499,11 @@ public class RideSharingSystem implements Sistema {
         }
 
         double ETs = cumJobs > 0 ? cumArea / cumJobs : 0.0;
-        double ENs = cumArea / reportTime;
+        double ENs = reportTime > 0 ? cumArea / reportTime: 0.0;
         double ETq = cumJobs > 0 ? cumAreaQ / cumJobs : 0.0;
-        double ENq = cumAreaQ / reportTime;
+        double ENq = reportTime > 0 ? cumAreaQ / reportTime : 0.0;
         double ES = cumJobs > 0 ? cumServiceArea / cumJobs : 0.0;
-        double ENS = cumServiceArea / reportTime;
+        double ENS = reportTime > 0 ? cumServiceArea / reportTime  : 0.0;
         double rho = sumRho / (SIMPLE_NODES + RIDE_NODES);//aggiungi rn
 
         //prepare file global.csv in baseDir/finite_interval

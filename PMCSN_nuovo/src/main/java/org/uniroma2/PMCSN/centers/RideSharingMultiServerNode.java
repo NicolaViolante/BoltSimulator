@@ -28,9 +28,7 @@ public class RideSharingMultiServerNode implements Node {
     private final int RIDESERVERS;
 
     private final double P_EXIT;
-    private final double P_FEEDBACK;
     private final double P_MATCH_BUSY;
-    private final double P_MATCH_IDLE;
     private final double TIME_WINDOW;
     private final List<RideSharingMultiServerNodeSimple> centriTradizionali;
 
@@ -41,9 +39,7 @@ public class RideSharingMultiServerNode implements Node {
 
         ConfigurationManager config = new ConfigurationManager();
         P_EXIT = config.getDouble("probabilities", "rideExit");
-        P_FEEDBACK = config.getDouble("probabilities", "rideFeedback");
         P_MATCH_BUSY = config.getDouble("probabilities", "rideMatchBusy");
-        P_MATCH_IDLE = config.getDouble("probabilities", "rideMatchIdle");
         TIME_WINDOW = config.getDouble("simulation", "timeWindow");
 
         String[] srv = config.getString("simulation", "rideSimpleServers").split(",");
@@ -121,10 +117,6 @@ public class RideSharingMultiServerNode implements Node {
             double p = rng.random();
             if (p < P_EXIT) {
                 numberJobInSystem--;
-                return -1;
-            } else if (p < P_FEEDBACK) {
-                numberJobInSystem--;
-                generateFeedback(arr);
                 return -1;
             }
 
@@ -305,7 +297,6 @@ public class RideSharingMultiServerNode implements Node {
         for (int i = 1; i <= RIDESERVERS; i++) {
             if (event.get(i).x == 0
                     && event.get(i).capacitaRimanente >= firstReq.postiRichiesti
-                    && rng.random() < P_MATCH_IDLE
                     && event.get(i).capacitaRimanente > bestCapIdle) {
                 bestCapIdle = event.get(i).capacitaRimanente;
                 bestIdle = i;
