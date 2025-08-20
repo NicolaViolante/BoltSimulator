@@ -33,7 +33,7 @@ public class SimpleSystem implements Sistema {
     private final int REPLICAS;
     private final double STOP;
     private final double REPORTINTERVAL;
-    private final int SEED;
+    private final long SEED;
 
     /*Case Infinite*/
     private final int BATCHSIZE;
@@ -53,7 +53,7 @@ public class SimpleSystem implements Sistema {
                 .getDouble("simulation", "reportInterval");
         this.BATCHSIZE = config.getInt("simulation", "batchSize");
         this.NUMBATCHES = config.getInt("simulation", "numBatches");
-        this.SEED = config.getInt("simulation", "seed");
+        this.SEED = (long) config.getDouble("simulation", "seed");
         int rngStreamIndex = config.getInt("general", "seedStreamIndex");
 
         // 2) inizializza BasicStatistics per ogni nodo
@@ -108,15 +108,26 @@ public class SimpleSystem implements Sistema {
         System.out.println("=== Finite Simulation ===");
 
         for (int rep = 1; rep <= REPLICAS; rep++) {
+            double nextReportTime = REPORTINTERVAL;
+            double lastArrivalTime = 0.0;
+            double lastCompletionTime = 0.0;
 
             long seedForRep = rngs.getSeed();
 
             List<SimpleMultiServerNode> localNodes = init(rngs);
 
             rngs.plantSeeds(seedForRep);
-            double nextReportTime = REPORTINTERVAL;
-            double lastArrivalTime = 0.0;
-            double lastCompletionTime = 0.0;
+
+            for (int i = 0; i < NODES; i++) {
+                IntervalCSVGenerator.writeIntervalData(
+                        true, seedForRep, i, 0,
+                        0, 0, 0, 0,
+                        0, 0, 0,
+                        baseDir
+                );
+            }
+            writeGlobalInterval(seedForRep, 0, localNodes, baseDir);
+
 
             while (true) {
                 double tmin = Double.POSITIVE_INFINITY;
@@ -131,6 +142,9 @@ public class SimpleSystem implements Sistema {
 
                 if (nextReportTime <= tmin && nextReportTime <= STOP) {
                     for (int i = 0; i < NODES; i++) {
+
+
+
                         SimpleMultiServerNode n = localNodes.get(i);
                         Area a = n.getAreaObject();
                         MsqSum[] sums = n.getMsqSums();

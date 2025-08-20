@@ -25,7 +25,7 @@ def plot_response_times(csv_path, out_dir, time_col='Time', response_col='ETs'):
     ax.grid(True)
 
     ax.xaxis.set_major_locator(dynamic_locator(df[time_col], n_bins=10, min_step=1.0))
-    ax.yaxis.set_major_locator(dynamic_locator(df[response_col], n_bins=10, min_step=0.1))
+    ax.yaxis.set_major_locator(plt.MaxNLocator())
 
     ax.legend(title=seed_col, loc='upper right', bbox_to_anchor=(1, 1))
     fig.tight_layout()
@@ -50,7 +50,8 @@ def plot_queue_times(csv_path, out_dir, time_col='Time', queue_col='ETq'):
     ax.grid(True)
 
     ax.xaxis.set_major_locator(dynamic_locator(df[time_col], n_bins=10, min_step=1.0))
-    ax.yaxis.set_major_locator(dynamic_locator(df[queue_col], n_bins=10, min_step=0.1))
+    ax.yaxis.set_major_locator(plt.MaxNLocator())
+
 
     ax.legend(title=seed_col, loc='upper right', bbox_to_anchor=(1, 1))
     fig.tight_layout()
@@ -75,7 +76,7 @@ def plot_job_counts(csv_path, out_dir, time_col='Time', jobs_col='ENs'):
     ax.grid(True)
 
     ax.xaxis.set_major_locator(dynamic_locator(df[time_col], n_bins=10, min_step=1.0))
-    ax.yaxis.set_major_locator(dynamic_locator(df[jobs_col], n_bins=10, min_step=1.0))
+    ax.yaxis.set_major_locator(plt.MaxNLocator())
 
     ax.legend(title=seed_col, loc='upper right', bbox_to_anchor=(1, 1))
     fig.tight_layout()

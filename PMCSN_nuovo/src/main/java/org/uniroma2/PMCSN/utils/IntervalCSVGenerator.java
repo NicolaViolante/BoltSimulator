@@ -134,11 +134,11 @@ public class IntervalCSVGenerator {
         }
 
         double ETs = cumJobs > 0 ? cumArea / cumJobs : 0.0;
-        double ENs = cumArea / reportTime;
+        double ENs = reportTime > 0 ? cumArea / reportTime: 0.0;
         double ETq = cumJobs > 0 ? cumAreaQ / cumJobs : 0.0;
-        double ENq = cumAreaQ / reportTime;
+        double ENq = reportTime > 0 ? cumAreaQ / reportTime : 0.0;
         double ES = cumJobs > 0 ? cumServiceArea / cumJobs : 0.0;
-        double ENS = cumServiceArea / reportTime;
+        double ENS = reportTime > 0 ? cumServiceArea / reportTime  : 0.0;
         double rho = sumRho / config.getInt("simulation", "nodes");;
 
         // prepara file global.csv in baseDir/finite_interval
