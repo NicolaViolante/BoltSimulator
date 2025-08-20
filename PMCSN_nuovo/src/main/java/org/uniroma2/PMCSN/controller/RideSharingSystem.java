@@ -3,7 +3,6 @@ package org.uniroma2.PMCSN.controller;
 import org.uniroma2.PMCSN.centers.Node;
 import org.uniroma2.PMCSN.centers.RideSharingMultiServerNode;
 import org.uniroma2.PMCSN.centers.RideSharingMultiServerNodeSimple;
-import org.uniroma2.PMCSN.centers.SimpleMultiServerNode;
 import org.uniroma2.PMCSN.configuration.ConfigurationManager;
 import org.uniroma2.PMCSN.libs.Rngs;
 import org.uniroma2.PMCSN.model.*;
@@ -25,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-import static org.uniroma2.PMCSN.utils.IntervalCSVGenerator.writeGlobalInterval;
 
 
 public class RideSharingSystem implements Sistema {
@@ -203,7 +200,6 @@ public class RideSharingSystem implements Sistema {
                 }
             }
 
-            // Popoliamo le liste con i valori calcolati a fine replica per ogni nodo
             for (int i = 0; i < SIMPLE_NODES+RIDE_NODES; i++) {
                 Area a = localNodes.get(i).getAreaObject();
                 MsqSum[] sums = localNodes.get(i).getMsqSums();
@@ -667,16 +663,16 @@ public class RideSharingSystem implements Sistema {
                     }
                     startTimeBatch = clock;
                     jobObservations = 0;
-                    continue; // salta la raccolta batch finché non finisce warm-up
-                }
-            } else {
-                if (idxMin != 0) {
-                    jobObservations++;
+                    continue; // salta la raccolta batch finché non finisci warm-up
                 }
             }
 
+            if (!isWarmingUp && idxMin != 0) {
+                jobObservations++;
+            }
+
             // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
-            if (jobObservations == BATCHSIZE) {
+            if (!isWarmingUp && jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
 

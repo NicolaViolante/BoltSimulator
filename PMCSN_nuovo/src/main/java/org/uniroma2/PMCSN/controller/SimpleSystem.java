@@ -12,7 +12,6 @@ import org.uniroma2.PMCSN.utils.Verification;
 
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,13 +33,13 @@ public class SimpleSystem implements Sistema {
     private final double STOP;
     private final double REPORTINTERVAL;
     private final long SEED;
+    private static final double WARM_UP = 1000;
 
     /*Case Infinite*/
     private final int BATCHSIZE;
     private final int NUMBATCHES;
 
 
-    private BatchStatistics batchStatistics;
     ConfigurationManager config = new ConfigurationManager();
 
     public SimpleSystem() {
@@ -54,7 +53,6 @@ public class SimpleSystem implements Sistema {
         this.BATCHSIZE = config.getInt("simulation", "batchSize");
         this.NUMBATCHES = config.getInt("simulation", "numBatches");
         this.SEED = (long) config.getDouble("simulation", "seed");
-        int rngStreamIndex = config.getInt("general", "seedStreamIndex");
 
         // 2) inizializza BasicStatistics per ogni nodo
         // Ora teniamo le statistiche per ogni nodo
@@ -413,7 +411,6 @@ public class SimpleSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
-        int count=0;
         boolean isWarmingUp = true;
 
         // Inizializzo RNG e nodi
@@ -445,21 +442,32 @@ public class SimpleSystem implements Sistema {
                 }
             }
 
-//            if (tmin>WARM_UP){
-//                isWarmingUp = false;
-//            }
-
             // Integro e processo evento
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
 
-            if (idxMin != 0) {
+            // Controllo warm-up
+            if (isWarmingUp && clock >= WARM_UP) {
+                isWarmingUp = false;
+                System.out.println("Fine warm-up a t=" + clock);
+                // reset statistiche
+                for (SimpleMultiServerNode n : nodes) n.resetStatistics();
+                Arrays.fill(areaNodeSnap,   0.0);
+                Arrays.fill(areaQueueSnap,  0.0);
+                Arrays.fill(areaServSnap,   0.0);
+                Arrays.fill(jobsServedSnap, 0L);
+                startTimeBatch = clock;
+                jobObservations = 0;
+                continue;
+            }
+
+            if (!isWarmingUp && idxMin != 0) {
                 jobObservations++;
             }
 
             // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
-            if (jobObservations == BATCHSIZE) {
+            if (!isWarmingUp && jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
 
@@ -501,7 +509,7 @@ public class SimpleSystem implements Sistema {
                         utilizationByNode     .get(i).add(rho_batch);
                         lambdaByNode          .get(i).add(lambda_batch);
 
-                        // 3) Calcolo medie cumulative su tutti i batch finora
+                        // 3) Calcolo medie cumulative
                         double ETs_cum   = computeMean(respTimeMeansByNode.get(i));
                         double ETq_cum   = computeMean(queueTimeMeansByNode.get(i));
                         double ES_cum    = computeMean(serviceTimeMeansByNode.get(i));
@@ -631,8 +639,7 @@ public class SimpleSystem implements Sistema {
             ));
         }
 
-
-        // Calcolo e stampa autocorrelazione per ogni centro
+        /* Calcolo e stampa autocorrelazione per ogni centro */
         for (int i = 0; i < NODES; i++) {
             String centerName = "Center" + i;
             List<BatchMetric> allBatchMetrics = List.of(
@@ -799,22 +806,6 @@ public class SimpleSystem implements Sistema {
             localNodes.add(n);
         }
         return localNodes;
-    }
-
-    private void deleteDirectory(File directory) {
-        if (directory.exists()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        deleteDirectory(file);
-                    } else {
-                        file.delete();
-                    }
-                }
-            }
-            directory.delete();
-        }
     }
 
 
