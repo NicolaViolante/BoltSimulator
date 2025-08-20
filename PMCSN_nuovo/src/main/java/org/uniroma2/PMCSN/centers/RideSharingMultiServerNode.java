@@ -329,7 +329,7 @@ public class RideSharingMultiServerNode implements Node {
         //System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n", req.postiRichiesti, serverIdx, clock.current);
         //System.out.printf("New service time drawn: %.3f%n", svcNew);
 
-        double alpha = 0.2; // fattore di incremento (10% per ogni richiesta aggiuntiva)
+        double alpha = 0.5; // fattore di incremento (10% per ogni richiesta aggiuntiva)
 
         //System.out.printf("Server %d status: isBusy=%b, numRichiesteServite=%d%n", serverIdx, s.isBusy(), s.numRichiesteServite);
         //System.out.printf("Current service info before assignment: startServiceTime=%.3f, svc=%.3f, t=%.3f%n", s.startServiceTime, s.svc, s.t);
