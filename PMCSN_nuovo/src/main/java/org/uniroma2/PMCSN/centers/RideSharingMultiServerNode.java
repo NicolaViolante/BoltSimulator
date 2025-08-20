@@ -326,13 +326,10 @@ public class RideSharingMultiServerNode implements Node {
         MsqEvent s = event.get(serverIdx);
         double svcNew = distrs.getServiceTimeRideSharing(rng);
 
-        //System.out.printf("=== Assigning request (postiRichiesti=%d) to server %d at time %.3f ===%n", req.postiRichiesti, serverIdx, clock.current);
-        //System.out.printf("New service time drawn: %.3f%n", svcNew);
 
-        double alpha = 0.5; // fattore di incremento (10% per ogni richiesta aggiuntiva)
+        double alpha = 0.3; // fattore di incremento (30% per ogni richiesta aggiuntiva)
+        double overhead = svcNew * alpha * s.numRichiesteServite;
 
-        //System.out.printf("Server %d status: isBusy=%b, numRichiesteServite=%d%n", serverIdx, s.isBusy(), s.numRichiesteServite);
-        //System.out.printf("Current service info before assignment: startServiceTime=%.3f, svc=%.3f, t=%.3f%n", s.startServiceTime, s.svc, s.t);
 
         if (!s.isBusy()) {
             // Primo passeggero → parte subito
@@ -340,15 +337,13 @@ public class RideSharingMultiServerNode implements Node {
             s.svc = svcNew;
             s.t = s.startServiceTime + svcNew;
 
-            //System.out.printf("Server %d was idle. Starting service at %.3f, ending at %.3f%n",
-              //      serverIdx, s.startServiceTime, s.t);
+
         } else {
             // Server già attivo
             double elapsed = clock.current - s.startServiceTime;
             double remaining = Math.max(s.svc - elapsed, 0);
 
-            //System.out.printf("Elapsed time on current service: %.3f%n", elapsed);
-            //System.out.printf("Remaining time on current service: %.3f%n", remaining);
+
 
             if (remaining < 1e-6) {
                 // Servizio praticamente finito → resetto partenza da adesso
@@ -356,28 +351,13 @@ public class RideSharingMultiServerNode implements Node {
                 s.svc = svcNew;
                 s.t = s.startServiceTime + svcNew;
 
-                //System.out.printf("Server %d service finished. Restarting at %.3f, ending at %.3f%n",
-                  //      serverIdx, s.startServiceTime, s.t);
+
             } else {
-                // Calcolo overhead proporzionale al numero di richieste già servite
-                double overhead = svcNew * alpha * s.numRichiesteServite;
-                //System.out.printf("Calculated overhead: svcNew * alpha * numRichiesteServite = %.3f * %.3f * %d = %.3f%n",
-                  //      svcNew, alpha, s.numRichiesteServite, overhead);
 
-                // Calcolo nuovo tempo di servizio: prendo il max tra remaining e svcNew+overhead per "allungare"
-                double newServiceTime = svcNew + overhead;
-                //System.out.printf("New service time (svcNew + overhead): %.3f + %.3f = %.3f%n", svcNew, overhead, newServiceTime);
-
-                // Aggiorno tempo di servizio totale
-                double maxTime = Math.max(remaining, newServiceTime);
-                //System.out.printf("Max tra remaining e newServiceTime: max(%.3f, %.3f) = %.3f%n", remaining, newServiceTime, maxTime);
-
-                //s.svc = elapsed + maxTime;
-                s.svc = elapsed + (s.svc*s.numRichiesteServite + svcNew) / (s.numRichiesteServite+1);
+                s.svc = elapsed + (s.svc*s.numRichiesteServite + svcNew + overhead) / (s.numRichiesteServite+1);
                 s.t = s.startServiceTime + s.svc;
 
-                //System.out.printf("Server %d busy. Updated svc: %.3f, Updated end time: %.3f%n",
-                  //      serverIdx, s.svc, s.t);
+
             }
         }
 
@@ -386,7 +366,6 @@ public class RideSharingMultiServerNode implements Node {
         s.capacitaRimanente -= req.postiRichiesti;
         s.postiRichiesti += req.postiRichiesti;
 
-        //System.out.printf("After assignment: Server %d now serving %d requests, capacitaRimanente: %d, postiRichiesti: %d%n%n",
-          //      serverIdx, s.numRichiesteServite, s.capacitaRimanente, s.postiRichiesti);
+
     }
 }
