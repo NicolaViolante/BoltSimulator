@@ -65,9 +65,7 @@ public class RideSharingSystem implements Sistema {
     public void runFiniteSimulation() {
         final double STOP = this.STOP;
         String baseDir = "csvFilesIntervals";
-        //Rng setting the seed
-        long[] seeds = new long[1024];
-        seeds[1] = 123456789L;
+
         Rngs rngs = new Rngs();
 
         List<List<Long>> jobsProcessedByNode = new ArrayList<>(SIMPLE_NODES+RIDE_NODES);
@@ -106,8 +104,11 @@ public class RideSharingSystem implements Sistema {
         System.out.println("=== Finite Simulation ===");
 
         for (int rep = 1; rep <= REPLICAS; rep++) {
-            rngs.plantSeeds(seeds[rep]);
+
+            long seedForRep = rngs.getSeed();
+
             List<Node> localNodes = init(rngs);
+            rngs.plantSeeds(seedForRep);
             double nextReportTime = REPORTINTERVAL;
             double lastArrivalTime = 0.0;
             double lastCompletionTime = 0.0;
@@ -163,14 +164,14 @@ public class RideSharingSystem implements Sistema {
                         }
 
                         IntervalCSVGenerator.writeIntervalData(
-                                true, rep, i, nextReportTime,
+                                true, seedForRep, i, nextReportTime,
                                 ETs[i], ENs[i], ETq[i], ENq[i],
                                 ES[i], ENS[i], rho[i],
                                 baseDir
                         );
                     }
 
-                    writeGlobalInterval(rep, nextReportTime, localNodes, baseDir);
+                    writeGlobalInterval(seedForRep, nextReportTime, localNodes, baseDir);
                     nextReportTime += REPORTINTERVAL;
                     continue;
                 }
@@ -237,10 +238,6 @@ public class RideSharingSystem implements Sistema {
                 n.resetStatistics();
                 // eventualmente resettare anche aree se necessario
             }
-
-            // Generating next seed
-            rngs.selectStream(0);
-            seeds[rep + 1] = rngs.getSeed();
         }
 
         // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
@@ -468,7 +465,7 @@ public class RideSharingSystem implements Sistema {
     }
 
     private void writeGlobalInterval(
-            int rep,
+            long rep,
             double reportTime,
             List<Node> localNodes,
             String baseDir

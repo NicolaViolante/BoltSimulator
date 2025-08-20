@@ -28,7 +28,6 @@ import static org.uniroma2.PMCSN.utils.IntervalCSVGenerator.writeGlobalInterval;
 
 public class SimpleSystem implements Sistema {
 
-    private static final double WARM_UP = 1000;
     /*Case Finite*/
     private final int NODES;
     private final int REPLICAS;
@@ -70,9 +69,7 @@ public class SimpleSystem implements Sistema {
     public void runFiniteSimulation() {
         final double STOP = this.STOP;
         String baseDir = "csvFilesIntervals";
-        //Rng setting the seed
-        long[] seeds = new long[1024];
-        seeds[1] = 123456789L;
+
         Rngs rngs = new Rngs();
 
         List<List<Long>> jobsProcessedByNode = new ArrayList<>(NODES);
@@ -111,8 +108,12 @@ public class SimpleSystem implements Sistema {
         System.out.println("=== Finite Simulation ===");
 
         for (int rep = 1; rep <= REPLICAS; rep++) {
-            rngs.plantSeeds(seeds[rep]);
+
+            long seedForRep = rngs.getSeed();
+
             List<SimpleMultiServerNode> localNodes = init(rngs);
+
+            rngs.plantSeeds(seedForRep);
             double nextReportTime = REPORTINTERVAL;
             double lastArrivalTime = 0.0;
             double lastCompletionTime = 0.0;
@@ -149,14 +150,14 @@ public class SimpleSystem implements Sistema {
                         rho[i] = (lambda[i] * ES[i]) / numServers;
 
                         IntervalCSVGenerator.writeIntervalData(
-                                true, rep, i, nextReportTime,
+                                true, seedForRep, i, nextReportTime,
                                 ETs[i], ENs[i], ETq[i], ENq[i],
                                 ES[i], ENS[i], rho[i],
                                 baseDir
                         );
                     }
 
-                    writeGlobalInterval(rep, nextReportTime, localNodes, baseDir);
+                    writeGlobalInterval(seedForRep, nextReportTime, localNodes, baseDir);
                     nextReportTime += REPORTINTERVAL;
                     continue;
                 }
@@ -213,10 +214,6 @@ public class SimpleSystem implements Sistema {
                 n.resetStatistics();
                 // eventualmente resettare anche aree se necessario
             }
-
-            // Generating next seed
-            rngs.selectStream(0);
-            seeds[rep + 1] = rngs.getSeed();
         }
 
         // 7) Costruisco MeanStatistics usando il costruttore che prende i valori medi
@@ -402,6 +399,7 @@ public class SimpleSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
+        int count=0;
         boolean isWarmingUp = true;
 
         // Inizializzo RNG e nodi
@@ -433,35 +431,20 @@ public class SimpleSystem implements Sistema {
                 }
             }
 
+//            if (tmin>WARM_UP){
+//                isWarmingUp = false;
+//            }
+
             // Integro e processo evento
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
 
-            // Attiviamo warm-up
-            if (isWarmingUp) {
-                if (clock >= WARM_UP) {
-                    isWarmingUp = false;
-                    System.out.println("Fine warm-up a t=" + clock);
-                    // Reset snapshot e statistiche per iniziare raccolta batch post warm-up
-                    for (int i = 0; i < NODES; i++) {
-                        Area a = nodes.get(i).getAreaObject();
-                        MsqSum[] ss = nodes.get(i).getMsqSums();
-                        areaNodeSnap[i]   = a.getNodeArea();
-                        areaQueueSnap[i]  = a.getQueueArea();
-                        areaServSnap[i]   = a.getServiceArea();
-                        jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
-                    }
-                    startTimeBatch = clock;
-                    jobObservations = 0;
-                    continue; // salta la raccolta batch finché non finisce warm-up
-                }
-            } else {
-                if (idxMin != 0) {
-                    jobObservations++;
-                }
+            if (idxMin != 0) {
+                jobObservations++;
             }
 
+            // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
             if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
@@ -682,6 +665,13 @@ public class SimpleSystem implements Sistema {
             );
         }
     }
+
+
+
+
+
+
+
 
     private static void printVerificationResult(Verification.VerificationResult result) {
         String within  = BRIGHT_GREEN + "within" + RESET;

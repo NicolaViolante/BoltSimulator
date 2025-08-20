@@ -109,7 +109,7 @@ public class IntervalCSVGenerator {
     }
 
     public static void writeGlobalInterval(
-            int rep,
+            long rep,
             double reportTime,
             List<SimpleMultiServerNode> localNodes,
             String baseDir
