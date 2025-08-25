@@ -4,10 +4,6 @@ public class MsqServer {
 
     private double lastCompletionTime;
 
-    public double getLastCompletionTime() {
-        return lastCompletionTime;
-    }
-
     public void setLastCompletionTime(double lastCompletionTime) {
         this.lastCompletionTime = lastCompletionTime;
     }

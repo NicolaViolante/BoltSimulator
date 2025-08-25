@@ -32,10 +32,6 @@ public class MsqEvent implements Comparable<MsqEvent> {        /* the next-event
         richiesteInServizio.clear();
     }
 
-    public int getNumRichiesteInServizio() {
-        return richiesteInServizio.size();
-    }
-
     @Override
     public int compareTo(MsqEvent other) {
         return Double.compare(this.t, other.t);

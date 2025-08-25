@@ -184,7 +184,6 @@ public class RideSharingMultiServerNodeSimple implements Node {
 
     @Override public Area getAreaObject()   { return areaCollector; }
     @Override public MsqSum[] getMsqSums()  { return sum; }
-    @Override public MsqServer[] getServersCompletition() { return serversCompletion; }
 
     @Override
     public void resetStatistics() {

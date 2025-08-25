@@ -228,11 +228,6 @@ public class RideSharingMultiServerNode implements Node {
     }
 
     @Override
-    public MsqServer[] getServersCompletition() {
-        return new MsqServer[0];
-    }
-
-    @Override
     public void resetStatistics() {
 
         // reset delle aree

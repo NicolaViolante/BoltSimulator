@@ -12,7 +12,6 @@ import org.uniroma2.PMCSN.utils.IntervalCSVGenerator;
 import org.uniroma2.PMCSN.utils.Verification;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -433,23 +432,6 @@ public class RideSharingSystem implements Sistema {
         return list.stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
     }
 
-    private void deleteDirectory(File directory) {
-        if (!directory.exists()) {
-            return;
-        }
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    deleteDirectory(file);
-                } else file.delete();
-            }
-            directory.delete();
-        } else {
-            directory.delete();
-        }
-    }
-
     private List<Node> init(Rngs rng) {
         List<Node> localNodes = new ArrayList<>();
         List<RideSharingMultiServerNodeSimple> centriTradizionali = new ArrayList<>();
@@ -552,8 +534,8 @@ public class RideSharingSystem implements Sistema {
                 );
                 // Header: batch + solo medie cumulative
                 w.write("SimulationType,Batch,"
-                        + "E[Ts]_cum,E[Tq]_cum,E[S]_cum,"
-                        + "E[N]_cum,E[Nq]_cum,rho_cum,lambda_cum");
+                        + "ETs,ETq,ES,"
+                        + "EN,ENq,rho,lambda");
                 w.newLine();
                 w.write("INFINITE,0,0,0,0,0,0,0,0");
                 w.newLine();

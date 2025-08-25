@@ -139,7 +139,7 @@ public class IntervalCSVGenerator {
         double ENq = reportTime > 0 ? cumAreaQ / reportTime : 0.0;
         double ES = cumJobs > 0 ? cumServiceArea / cumJobs : 0.0;
         double ENS = reportTime > 0 ? cumServiceArea / reportTime  : 0.0;
-        double rho = sumRho / config.getInt("simulation", "nodes");;
+        double rho = sumRho / config.getInt("simulation", "nodes");
 
         // prepara file global.csv in baseDir/finite_interval
         String dir = baseDir + "/finite_interval";

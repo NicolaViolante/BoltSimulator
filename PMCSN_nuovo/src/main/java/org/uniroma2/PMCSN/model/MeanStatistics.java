@@ -1,6 +1,5 @@
 package org.uniroma2.PMCSN.model;
 
-import java.util.List;
 
 public class MeanStatistics {
 
@@ -15,17 +14,6 @@ public class MeanStatistics {
     public double meanUtilization;
     public double meanQueuePopulation;
 
-    public MeanStatistics(AbstractStatistics stats) {
-        this.centerName = stats.getCenterName();
-        this.meanResponseTime = computeMean(stats.meanResponseTimeList);
-        this.meanServiceTime = computeMean(stats.meanServiceTimeList);
-        this.meanQueueTime = computeMean(stats.meanQueueTimeList);
-        this.lambda = computeMean(stats.lambdaList);
-        this.meanSystemPopulation = computeMean(stats.meanSystemPopulationList);
-        this.meanUtilization = computeMean(stats.meanUtilizationList);
-        this.meanQueuePopulation = computeMean(stats.meanQueuePopulationList);
-    }
-
     /*viene usato a fine simulazioni per produrre le statistiche aggregate */
 
     public MeanStatistics(String centerName, double  meanResponseTime, double meanServiceTime, double meanQueueTime
@@ -38,9 +26,5 @@ public class MeanStatistics {
         this.meanSystemPopulation = meanSystemPopulation;
         this.meanUtilization = meanUtilization;
         this.meanQueuePopulation = meanQueuePopulation;
-    }
-
-    public static double computeMean(List<Double> values) {
-        return values.stream().mapToDouble(Double::doubleValue).average().orElseThrow();
     }
 }

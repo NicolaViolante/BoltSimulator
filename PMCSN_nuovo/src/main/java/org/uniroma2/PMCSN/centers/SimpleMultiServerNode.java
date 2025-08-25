@@ -112,9 +112,6 @@ public class SimpleMultiServerNode implements Node {
         MsqEvent ev = event.get(e);
         clock.next = ev.t;
 
-        int busyServers = Math.min(numberJobInSystem, sum.length - 1);
-        /*prima ci stava numberOfServersInTheCenter*/
-
         clock.current = clock.next;
 
         // ARRIVAL esterno o routing
@@ -154,9 +151,6 @@ public class SimpleMultiServerNode implements Node {
                 MsqEvent sEvent = event.get(serverIndex); /*evento di completamento*/
                 sEvent.t = clock.current + serviceTimeSimple;
 
-                //System.out.printf("[DEBUG] Server %d prende servizio, serviceTime=%.4f, completionTime=%.4f\n",
-                        //serverIndex, serviceTimeSimple, sEvent.t);
-
                 /*completion time*/
                 serversCompletition[serverIndex].setLastCompletionTime(sEvent.t);
                 /*completion time*/
@@ -165,8 +159,6 @@ public class SimpleMultiServerNode implements Node {
 
                 sum[serverIndex].service += serviceTimeSimple;
                 /*sommiamo il tempo di servizio, questo ci servità poi per il calcolo delle statistiche*/
-
-                /* sum[serverIndex].served++; */
 
                 if (e > numberOfServersInTheCenter) {
                     event.remove(e);  // rimuovi evento routing
@@ -177,7 +169,6 @@ public class SimpleMultiServerNode implements Node {
             // DEPARTURE
             numberJobInSystem--;
             sum[e].served++;
-            //System.out.printf("[DEBUG] Completion server %d a t=%.4f, numberJobInSystem=%d\n", e, clock.current, numberJobInSystem);
 
             if (numberJobInSystem >= numberOfServersInTheCenter) {
                 double serviceTimeSimple = distrs.getServiceTimeSimple(rng);
@@ -185,7 +176,6 @@ public class SimpleMultiServerNode implements Node {
                 MsqEvent sEvent = event.get(e);
                 sEvent.t = clock.current + serviceTimeSimple; /*nuovo tempo di completamento*/
 
-                //System.out.printf("[DEBUG] Server %d nuovo completion a t=%.4f\n", e, sEvent.t);
 
                 /*completion time*/
                 serversCompletition[e].setLastCompletionTime(sEvent.t);
@@ -195,7 +185,6 @@ public class SimpleMultiServerNode implements Node {
                 return e;
             } else {
                 event.get(e).x = 0;
-                //System.out.printf("[DEBUG] Server %d diventa libero a t=%.4f\n", e, clock.current);
             }
         }
         return -1;
@@ -236,11 +225,6 @@ public class SimpleMultiServerNode implements Node {
         return sum;
     }
 
-    @Override
-    public MsqServer[] getServersCompletition() {
-        return serversCompletition;
-    }
-
     // helper privati
 
     private int findFreeServer() {
@@ -267,47 +251,6 @@ public class SimpleMultiServerNode implements Node {
      */
     public int getId() { return centerIndex; }
 
-    /**
-     * Restituisce il tempo trascorso in coda dell'ultimo job
-     */
-    public double getLastQueueTime() {
-        double t = clock.current;
-        if (t == 0.0) return 0.0;
-        double queueArea = areaCollector.getQueueArea();
-        double completedJobs = 0;
-        for (int i = 1; i < sum.length; i++) {
-            completedJobs += sum[i].served;
-        }
-        return (completedJobs > 0) ? queueArea / completedJobs : 0.0;
-    }
-
-
-    /**
-     * Restituisce il tempo di servizio dell'ultimo job
-     */
-
-    public double getLastArrivalTimeInBatch() {
-        return lastArrivalTimeInBatch;
-    }
-
-
-    // alla fine della classe SimpleMultiServerNode
-    public int getNumServers() {
-        return this.numberOfServersInTheCenter;
-    }
-
-    public void resetLastArrivalTimeInBatch() {
-        lastArrivalTimeInBatch = 0.0;
-    }
-
-    /**
-     * Restituisce il numero di job nel centro
-     */
-
-    public int getNumberJobInSystem() {
-        return numberJobInSystem;
-    }
-
     // metodo di reset per warmup
     public void resetStatistics() {
         // reset delle aree
@@ -326,10 +269,5 @@ public class SimpleMultiServerNode implements Node {
     @Override
     public double getBusy() {
         return 0;
-    }
-
-    public int getNumberJobBusyInSystem() {
-
-        return Math.min(numberJobInSystem, sum.length - 1);
     }
 }
