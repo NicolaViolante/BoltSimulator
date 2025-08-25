@@ -326,6 +326,7 @@ public class SimpleSystem implements Sistema {
     private static final String BRIGHT_GREEN  = "\u001B[92m";
     private static final String BRIGHT_YELLOW = "\u001B[93m";
     private static final String BRIGHT_RED    = "\u001B[91m";
+    private static final String BRIGHT_BLU    = "\u001B[94m";
 
 
     @Override
@@ -845,7 +846,7 @@ public class SimpleSystem implements Sistema {
 
 
     public static void printBatchStatisticsResult(String centerName, List<BatchMetric> batchMetrics, int batchSize, int numBatches) {
-        System.out.println(BRIGHT_RED + "\n\n*******************************************************************************************************");
+        System.out.println(BRIGHT_BLU + "\n\n*******************************************************************************************************");
         System.out.println("AUTOCORRELATION VALUES FOR " + centerName + " [B:" + batchSize + "|K:" + numBatches + "]");
         System.out.println("*******************************************************************************************************" + RESET);
         for (BatchMetric batchMetric : batchMetrics) {
@@ -854,7 +855,7 @@ public class SimpleSystem implements Sistema {
             String color = getAcfColor(value);
             System.out.printf("%s: %s%.4f%s%n", metricName, color, value, RESET);
         }
-        System.out.println(BRIGHT_RED + "*******************************************************************************************************" + RESET);
+        System.out.println(BRIGHT_BLU + "*******************************************************************************************************" + RESET);
     }
 
 

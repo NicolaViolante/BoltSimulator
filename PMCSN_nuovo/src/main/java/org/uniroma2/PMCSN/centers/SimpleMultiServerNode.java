@@ -139,7 +139,7 @@ public class SimpleMultiServerNode implements Node {
                 }
             }
 
-            int serverIndex = findFreeServer();
+            int serverIndex = findOne();
 
             if (serverIndex != -1) {
 
@@ -227,7 +227,7 @@ public class SimpleMultiServerNode implements Node {
 
     // helper privati
 
-    private int findFreeServer() {
+    private int findOne() {
         /*selection in order*/
         for (int i = 1; i < event.size(); i++) {
             if (event.get(i).x == 0) return i;

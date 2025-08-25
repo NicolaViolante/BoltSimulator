@@ -328,39 +328,19 @@ public class RideSharingMultiServerNode implements Node {
 
         if (!s.isBusy()) {
             // Primo passeggero → parte subito
-            s.startServiceTime = clock.current;
             s.svc = svcNew;
-            s.t = s.startServiceTime + svcNew;
+            s.t = clock.current + svcNew;
 
 
         } else {
             // Server già attivo
-            double elapsed = clock.current - s.startServiceTime;
-            double remaining = Math.max(s.svc - elapsed, 0);
-
-
-
-            if (remaining < 1e-6) {
-                // Servizio praticamente finito → resetto partenza da adesso
-                s.startServiceTime = clock.current;
-                s.svc = svcNew;
-                s.t = s.startServiceTime + svcNew;
-
-
-            } else {
-
-                s.svc = elapsed + (s.svc*s.numRichiesteServite + svcNew + overhead) / (s.numRichiesteServite+1);
-                s.t = s.startServiceTime + s.svc;
-
-
-            }
+            s.svc = (s.svc*s.numRichiesteServite + svcNew + overhead) / (s.numRichiesteServite+1);
+            s.t = clock.current + s.svc;
         }
 
         // Aggiorna batch
         s.numRichiesteServite++;
         s.capacitaRimanente -= req.postiRichiesti;
         s.postiRichiesti += req.postiRichiesti;
-
-
     }
 }

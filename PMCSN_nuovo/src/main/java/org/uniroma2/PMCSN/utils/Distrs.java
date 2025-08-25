@@ -46,7 +46,7 @@ public class Distrs {
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeSimple(Rngs r) {
         r.selectStream(2);
-      double esi = config.getDouble("simulation","esi");
+        double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
         double b = 40;
@@ -56,7 +56,7 @@ public class Distrs {
 
         double u = uniform(alpha, beta, r);
         return idfNormal(esi, 4, u);
-//        return exponential(esi,r);
+        //return exponential(esi,r);
     }
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
