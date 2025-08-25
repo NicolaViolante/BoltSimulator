@@ -814,9 +814,11 @@ public class RideSharingSystem implements Sistema {
         List<Comparison.ComparisonResult> comparisonResults =
                 Comparison.compareResults("INFINITE_SIMULATION", analyticalResults, meanStatsList);
 
-        List<ConfidenceInterval> ciList = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
-        for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
-            ciList.add(new ConfidenceInterval(
+        // === INTERVALLI DI CONFIDENZA ===
+        System.out.println("=== INTERVALLI DI CONFIDENZA ===");
+        List<ConfidenceInterval> ciList = new ArrayList<>();
+        for (int i = 0; i < SIMPLE_NODES+RIDE_NODES; i++) {
+            ConfidenceInterval ci = new ConfidenceInterval(
                     respTimeMeansByNode.get(i),
                     queueTimeMeansByNode.get(i),
                     serviceTimeMeansByNode.get(i),
@@ -824,9 +826,21 @@ public class RideSharingSystem implements Sistema {
                     queuePopMeansByNode.get(i),
                     utilizationByNode.get(i),
                     lambdaByNode.get(i)
-            ));
-        }
+            );
+            ciList.add(ci);
 
+            System.out.printf("Node %d: ±CI E[Ts]=%.4f, E[Tq]=%.4f, E[S]=%.4f, E[N]=%.4f, E[Nq]=%.4f, ρ=%.4f, λ=%.4f%n",
+                    i,
+                    ci.getResponseTimeCI(),
+                    ci.getQueueTimeCI(),
+                    ci.getServiceTimeCI(),
+                    ci.getSystemPopulationCI(),
+                    ci.getQueuePopulationCI(),
+                    ci.getUtilizationCI(),
+                    ci.getLambdaCI()
+            );
+
+        }
 
         // Calcolo e stampa autocorrelazione per ogni centro
         for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
@@ -841,7 +855,7 @@ public class RideSharingSystem implements Sistema {
                     new BatchMetric("λ", lambdaByNode.get(i))
             );
             for (BatchMetric batchMetric : allBatchMetrics) {
-                double acfValue = Math.abs(acf(batchMetric.values));
+                double acfValue = acf(batchMetric.values);
                 batchMetric.setAcfValue(acfValue);
             }
             printBatchStatisticsResult(centerName, allBatchMetrics, BATCHSIZE, NUMBATCHES);
