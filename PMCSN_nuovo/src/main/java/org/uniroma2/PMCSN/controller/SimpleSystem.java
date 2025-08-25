@@ -33,7 +33,7 @@ public class SimpleSystem implements Sistema {
     private final double STOP;
     private final double REPORTINTERVAL;
     private final long SEED;
-    private static final double WARM_UP = 1000;
+    private static final double WARM_UP = 0.2;
 
     /*Case Infinite*/
     private final int BATCHSIZE;
@@ -412,6 +412,7 @@ public class SimpleSystem implements Sistema {
         int batchNumber     = 0;
         int jobObservations = 0;
         boolean isWarmingUp = true;
+        int jobWarmup = 0;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -446,11 +447,12 @@ public class SimpleSystem implements Sistema {
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
+            jobWarmup++;
 
             // Controllo warm-up
-            if (isWarmingUp && clock >= WARM_UP) {
+            if (isWarmingUp && jobWarmup > WARM_UP*NUMBATCHES*BATCHSIZE) {
                 isWarmingUp = false;
-                System.out.println("Fine warm-up a t=" + clock);
+                System.out.println("Fine warm-up dopo " + jobWarmup + " job.");
                 // reset statistiche
                 for (SimpleMultiServerNode n : nodes) n.resetStatistics();
                 Arrays.fill(areaNodeSnap,   0.0);
