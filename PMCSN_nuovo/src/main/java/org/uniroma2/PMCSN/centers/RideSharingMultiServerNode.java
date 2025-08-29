@@ -196,6 +196,15 @@ public class RideSharingMultiServerNode implements Node {
         return busy;
     }
 
+    public int getNumBusyServers() {
+        int busyServers = 0;
+        // server sono gli indici 1..RIDESERVERS
+        for (int i = 1; i < event.size(); i++) {
+            if (event.get(i).isBusy()) busyServers++;
+        }
+        return busyServers;
+    }
+
     @Override
     public Area getAreaObject() { return areaCollector; }
 

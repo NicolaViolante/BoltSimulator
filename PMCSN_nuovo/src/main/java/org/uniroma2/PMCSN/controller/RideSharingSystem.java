@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-
 public class RideSharingSystem implements Sistema {
 
     private static final String RESET         = "\u001B[0m";
@@ -151,13 +150,14 @@ public class RideSharingSystem implements Sistema {
                             ENS[i] = a.getServiceArea() / nextReportTime;
 
                             int numServers = sums.length - 1;
-                            if(i != 4) {
 
-                                lambda[i] = served / nextReportTime;
-                                rho[i] = (lambda[i] * ES[i]) / numServers;
-
+                            // Calcolo lambda e rho: se è un RideSharingMultiServerNode uso busy servers fraction
+                            lambda[i] = served / nextReportTime;
+                            if (localNodes.get(i) instanceof RideSharingMultiServerNode) {
+                                int busyServers = ((RideSharingMultiServerNode) localNodes.get(i)).getNumBusyServers();
+                                rho[i] = numServers > 0 ? (double) busyServers / numServers : 0.0;
                             } else {
-                                rho[i] = localNodes.get(i).getBusy() / numServers;
+                                rho[i] = numServers > 0 ? (lambda[i] * ES[i]) / numServers : 0.0;
                             }
                         } else {
                             ETs[i] = 0.0;
@@ -218,18 +218,18 @@ public class RideSharingSystem implements Sistema {
                     double ENqReplica = a.getQueueArea() / STOP;
 
                     double lambdaReplica = jobsNow / STOP;
-                    double rhoReplica = (lambdaReplica * ESReplica) / numServers;
+                    double rhoReplica;
 
-                    if(i != 4) {
-
-                        lambda[i] = jobsNow / nextReportTime;
-                        rho[i] = (lambda[i] * ES[i]) / numServers;
-
+                    if (localNodes.get(i) instanceof RideSharingMultiServerNode) {
+                        int busyServers = ((RideSharingMultiServerNode) localNodes.get(i)).getNumBusyServers();
+                        rhoReplica = numServers > 0 ? (double) busyServers / numServers : 0.0;
                     } else {
-
-                        rho[i] = localNodes.get(i).getBusy() / numServers;
-
+                        rhoReplica = numServers > 0 ? (lambdaReplica * ESReplica) / numServers : 0.0;
                     }
+
+                    // In passato veniva fatto uno special-case su indice 4; ora si usa instanceof
+                    lambda[i] = jobsNow / STOP;
+                    rho[i] = rhoReplica;
 
                     respTimeMeansByNode.get(i).add(ETsReplica);
                     queueTimeMeansByNode.get(i).add(ETqReplica);
@@ -567,7 +567,7 @@ public class RideSharingSystem implements Sistema {
             System.err.println("Impossibile inizializzare CSV per sistema : " + e.getMessage());
         }
 
-        // Liste per accumulare i valori batch‑per‑batch
+        // Liste per accumulare i valori batch-per-batch
         List<List<Double>> respTimeMeansByNode    = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
         List<List<Double>> queueTimeMeansByNode   = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
         List<List<Double>> serviceTimeMeansByNode = new ArrayList<>(SIMPLE_NODES + RIDE_NODES);
@@ -688,7 +688,15 @@ public class RideSharingSystem implements Sistema {
                         double ENs_batch    = deltaNodeArea  / batchTime;
                         double ENq_batch    = deltaQueueArea / batchTime;
                         double lambda_batch = deltaJobs      / batchTime;
-                        double rho_batch    = (lambda_batch * ES_batch) / numServers;
+                        double rho_batch;
+
+                        // Calcolo rho_batch: se è nodo ride-sharing uso busy servers fraction
+                        if (nodes.get(i) instanceof RideSharingMultiServerNode) {
+                            int busyServers = ((RideSharingMultiServerNode) nodes.get(i)).getNumBusyServers();
+                            rho_batch = numServers > 0 ? (double) busyServers / numServers : 0.0;
+                        } else {
+                            rho_batch = numServers > 0 ? (lambda_batch * ES_batch) / numServers : 0.0;
+                        }
 
                         // 2) Li accumulo per il calcolo cumulativo
                         respTimeMeansByNode   .get(i).add(ETs_batch);

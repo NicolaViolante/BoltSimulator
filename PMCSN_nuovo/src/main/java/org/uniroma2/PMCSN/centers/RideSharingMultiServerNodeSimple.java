@@ -205,6 +205,7 @@ public class RideSharingMultiServerNodeSimple implements Node {
         return 0.0;
     }
 
+
     @Override
     public void resetState() {
         numberJobInSystem = 0;
