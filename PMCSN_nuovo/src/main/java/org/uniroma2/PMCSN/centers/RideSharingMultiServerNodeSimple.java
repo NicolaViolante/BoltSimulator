@@ -34,7 +34,7 @@ public class RideSharingMultiServerNodeSimple implements Node {
         this.P_EXIT = config.getDouble("probabilities", "exit");
 
         // leggo quanti server ha questo centro
-        String[] srv = config.getString("simulation", "servers").split(",");
+        String[] srv = config.getString("simulation", "rideSimpleServers").split(",");
         serverCount = Integer.parseInt(srv[centerIndex].trim());
 
         // array per stats [0]=per gli arrivi, [1..S]=per i server

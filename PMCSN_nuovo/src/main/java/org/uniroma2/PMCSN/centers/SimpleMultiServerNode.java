@@ -32,7 +32,6 @@ public class SimpleMultiServerNode implements Node {
     private int   numberJobInSystem = 0; /*numero di job attualmente nel centro, sia in coda che in servizio*/
     private double arrivalTime = 0.0;
     int numberOfServersInTheCenter; /*numero di servers nel centro*/
-    private double lastArrivalTimeInBatch;
 
 
     // parametri da config
@@ -72,8 +71,6 @@ public class SimpleMultiServerNode implements Node {
 
         /*genero il tempo di primo arrivo*/
         arrivalTime = distrs.getNextArrivalTimeSimpleCenter(rng, system, centerIndex, arrivalTime);
-
-        lastArrivalTimeInBatch = arrivalTime;
 
         MsqEvent arr = event.getFirst();
         arr.t = arrivalTime;
@@ -117,8 +114,6 @@ public class SimpleMultiServerNode implements Node {
         // ARRIVAL esterno o routing
         if (e == ARRIVAL || e > numberOfServersInTheCenter) {
             if (e == ARRIVAL) {
-
-                lastArrivalTimeInBatch = clock.current;
 
                 /*incremento le variabili di interesse*/
                 numberJobInSystem++;
@@ -245,11 +240,6 @@ public class SimpleMultiServerNode implements Node {
         double t        = clock.current;
         return (t > 0 && servers > 0) ? busyTime / (servers * t) : 0.0;
     }
-
-    /**
-     * Restituisce l'id del centro di servizio
-     */
-    public int getId() { return centerIndex; }
 
     // metodo di reset per warmup
     public void resetStatistics() {

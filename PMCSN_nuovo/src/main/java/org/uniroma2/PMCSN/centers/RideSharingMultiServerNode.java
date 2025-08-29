@@ -42,7 +42,7 @@ public class RideSharingMultiServerNode implements Node {
         P_MATCH_BUSY = config.getDouble("probabilities", "rideMatchBusy");
         TIME_WINDOW = config.getDouble("simulation", "timeWindow");
 
-        String[] srv = config.getString("simulation", "rideSimpleServers").split(",");
+        String[] srv = config.getString("simulation", "rideSharingServers").split(",");
         int small = Integer.parseInt(srv[0].trim());
         var medium = Integer.parseInt(srv[1].trim());
         RIDESERVERS = config.getInt("simulation", "rideServers");
@@ -322,7 +322,7 @@ public class RideSharingMultiServerNode implements Node {
         double svcNew = distrs.getServiceTimeRideSharing(rng);
 
 
-        double alpha = 0.3; // fattore di incremento (30% per ogni richiesta aggiuntiva)
+        double alpha = 0.2; // fattore di incremento (20% per ogni richiesta aggiuntiva)
         double overhead = svcNew * alpha * s.numRichiesteServite;
 
 
