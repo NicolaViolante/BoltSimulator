@@ -36,7 +36,7 @@ public class Distrs {
     }
 
     public double getNextArrivalTimeRideSharing(Rngs r, double sarrival) {
-        r.selectStream(1);
+        r.selectStream(2);
         double lambda = config.getDouble("simulation","lambdaride") * config.getDouble("simulation","pride") ;
         sarrival += exponential(1/lambda, r);
         return sarrival;
@@ -45,7 +45,7 @@ public class Distrs {
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeSimple(Rngs r) {
-        r.selectStream(2);
+        r.selectStream(3);
         double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
@@ -60,7 +60,7 @@ public class Distrs {
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
     public double getServiceTimeRideSharing(Rngs r) {
-        r.selectStream(3);
+        r.selectStream(4);
         double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
