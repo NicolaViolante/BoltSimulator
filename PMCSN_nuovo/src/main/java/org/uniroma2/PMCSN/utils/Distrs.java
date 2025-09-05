@@ -49,14 +49,13 @@ public class Distrs {
         double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
-        double b = 40;
+        double b = 30;
 
         alpha = cdfNormal(esi, 4, a);
         beta = cdfNormal(esi, 4, b);
 
         double u = uniform(alpha, beta, r);
         return idfNormal(esi, 4, u);
-        //return exponential(esi,r);
     }
 
     //dovrebbe restituire valore gaussiana troncata tra a e b
@@ -65,7 +64,7 @@ public class Distrs {
         double esi = config.getDouble("simulation","esi");
         double alpha, beta;
         double a = 2;
-        double b = 40;
+        double b = 30;
 
         alpha = cdfNormal(esi, 4, a);
         beta = cdfNormal(esi, 4, b);
