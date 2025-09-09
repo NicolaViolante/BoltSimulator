@@ -33,7 +33,7 @@ public class SimpleSystem implements Sistema {
     private final double STOP;
     private final double REPORTINTERVAL;
     private final long SEED;
-    private static final double WARM_UP = 0.2;
+
 
     /*Case Infinite*/
     private final int BATCHSIZE;
@@ -105,16 +105,20 @@ public class SimpleSystem implements Sistema {
 
         System.out.println("=== Finite Simulation ===");
 
+
+        rngs.plantSeeds(SEED);
+
+
         for (int rep = 1; rep <= REPLICAS; rep++) {
+            long seedForRep = rngs.getSeed();
+
             double nextReportTime = REPORTINTERVAL;
             double lastArrivalTime = 0.0;
             double lastCompletionTime = 0.0;
 
-            long seedForRep = rngs.getSeed();
 
             List<SimpleMultiServerNode> localNodes = init(rngs);
 
-            rngs.plantSeeds(seedForRep);
 
             for (int i = 0; i < NODES; i++) {
                 IntervalCSVGenerator.writeIntervalData(
@@ -412,8 +416,6 @@ public class SimpleSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
-        boolean isWarmingUp = true;
-        int jobWarmup = 0;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -448,29 +450,15 @@ public class SimpleSystem implements Sistema {
             for (SimpleMultiServerNode n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
-            jobWarmup++;
 
-            // Controllo warm-up
-            if (isWarmingUp && jobWarmup > WARM_UP*NUMBATCHES*BATCHSIZE) {
-                isWarmingUp = false;
-                System.out.println("Fine warm-up dopo " + jobWarmup + " job.");
-                // reset statistiche
-                for (SimpleMultiServerNode n : nodes) n.resetStatistics();
-                Arrays.fill(areaNodeSnap,   0.0);
-                Arrays.fill(areaQueueSnap,  0.0);
-                Arrays.fill(areaServSnap,   0.0);
-                Arrays.fill(jobsServedSnap, 0L);
-                startTimeBatch = clock;
-                jobObservations = 0;
-                continue;
-            }
 
-            if (!isWarmingUp && idxMin != 0) {
+
+            if (idxMin != 0) {
                 jobObservations++;
             }
 
             // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
-            if (!isWarmingUp && jobObservations == BATCHSIZE) {
+            if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
 

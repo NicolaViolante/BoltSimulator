@@ -32,7 +32,6 @@ public class RideSharingSystem implements Sistema {
     private static final String BRIGHT_RED    = "\u001B[91m";
     private static final String BRIGHT_BLUE    = "\u001B[94m";
     /*Case Finite*/
-    private static final double WARM_UP = 0.2;
     private final int SIMPLE_NODES;
     private final int RIDE_NODES;
     private final int REPLICAS ;
@@ -101,12 +100,17 @@ public class RideSharingSystem implements Sistema {
 
         System.out.println("=== Finite Simulation ===");
 
+
+        rngs.plantSeeds(SEED);
+
+
+
         for (int rep = 1; rep <= REPLICAS; rep++) {
 
             long seedForRep = rngs.getSeed();
 
             List<Node> localNodes = init(rngs);
-            rngs.plantSeeds(seedForRep);
+
             for (int i = 0; i < SIMPLE_NODES+RIDE_NODES; i++) {
                 IntervalCSVGenerator.writeIntervalData(
                         true, seedForRep, i, 0,
@@ -595,8 +599,6 @@ public class RideSharingSystem implements Sistema {
         double endTimeBatch;
         int batchNumber     = 0;
         int jobObservations = 0;
-        boolean isWarmingUp = true;
-        int jobWarmup = 0;
 
         // Inizializzo RNG e nodi
         Rngs rngs = new Rngs();
@@ -630,34 +632,16 @@ public class RideSharingSystem implements Sistema {
             for (Node n : nodes) n.integrateTo(tmin);
             clock = tmin;
             nodes.get(idxMin).processNextEvent(tmin);
-            jobWarmup++;
 
-            // Attiviamo warm-up
-            if (isWarmingUp && jobWarmup > WARM_UP*NUMBATCHES*BATCHSIZE) {
 
-                isWarmingUp = false;
-                System.out.println("Fine warm-up dopo " + jobWarmup + " job.");
-                // Reset snapshot e statistiche per iniziare raccolta batch post warm-up
-                for (int i = 0; i < SIMPLE_NODES + RIDE_NODES; i++) {
-                    Area a = nodes.get(i).getAreaObject();
-                    MsqSum[] ss = nodes.get(i).getMsqSums();
-                    areaNodeSnap[i] = a.getNodeArea();
-                    areaQueueSnap[i] = a.getQueueArea();
-                    areaServSnap[i] = a.getServiceArea();
-                    jobsServedSnap[i] = Arrays.stream(ss).mapToLong(s -> s.served).sum();
-                }
-                startTimeBatch = clock;
-                jobObservations = 0;
-                continue; // salta la raccolta batch finché non finisci warm-up
 
-            }
 
-            if (!isWarmingUp && idxMin != 0) {
+            if (idxMin != 0) {
                 jobObservations++;
             }
 
             // Quando raccolgo BATCHSIZE completamenti, calcolo e scrivo CSV
-            if (!isWarmingUp && jobObservations == BATCHSIZE) {
+            if (jobObservations == BATCHSIZE) {
                 endTimeBatch = clock;
                 double batchTime = endTimeBatch - startTimeBatch;
 
