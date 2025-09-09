@@ -52,9 +52,9 @@ public class Distrs {
         double b = 30;
 
         alpha = cdfNormal(esi, 4, a);
-        beta = cdfNormal(esi, 4, b);
+        beta = 1 - cdfNormal(esi, 4, b);
 
-        double u = uniform(alpha, beta, r);
+        double u = uniform(alpha, 1 - beta, r);
         return idfNormal(esi, 4, u);
 //        return exponential(esi,r);
     }
@@ -68,9 +68,9 @@ public class Distrs {
         double b = 30;
 
         alpha = cdfNormal(esi, 4, a);
-        beta = cdfNormal(esi, 4, b);
+        beta = 1 - cdfNormal(esi, 4, b);
 
-        double u = uniform(alpha, beta, r);
+        double u = uniform(alpha, 1 - beta, r);
         return idfNormal(esi, 4, u);
     }
 }
