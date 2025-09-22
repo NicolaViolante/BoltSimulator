@@ -5,9 +5,13 @@ public class Area {
     private double queueArea = 0.0;
     private double serviceArea = 0.0;
 
+    private double activeServerArea = 0.0;
+
     public double getNodeArea() {
         return nodeArea;
     }
+
+    public double getActiveServerArea() { return activeServerArea; }
 
     public void incNodeArea(double area) {
         nodeArea += area;
@@ -33,5 +37,10 @@ public class Area {
         nodeArea = 0.0;
         queueArea = 0.0;
         serviceArea = 0.0;
+    }
+
+    // <<< IMPLEMENTAZIONE DI SERVER AREA >>>
+    public void incActiveServerArea(double v) {
+        activeServerArea += v;
     }
 }

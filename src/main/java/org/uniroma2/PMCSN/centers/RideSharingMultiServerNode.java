@@ -253,7 +253,7 @@ public class RideSharingMultiServerNode implements Node {
     }
 
     public void generateFeedback(MsqEvent event) {
-
+        event.t = clock.current; //prova greta
         int num_posti = event.postiRichiesti;
         if(num_posti <= 3){
             centriTradizionali.getFirst().generateArrival(event.t);
@@ -329,17 +329,14 @@ public class RideSharingMultiServerNode implements Node {
         MsqEvent s = event.get(serverIdx);
         double svcNew = distrs.getServiceTimeRideSharing(rng);
 
-
         double alpha = 0.2; // fattore di incremento (20% per ogni richiesta aggiuntiva)
         double overhead = svcNew * alpha * s.numRichiesteServite;
-
 
         if (!s.isBusy()) {
             // Primo passeggero → parte subito
             s.svc = svcNew;
             s.t = clock.current + svcNew;
-
-
+            s.x = 1;
         } else {
             // Server già attivo
             s.svc = (s.svc*s.numRichiesteServite + svcNew + overhead) / (s.numRichiesteServite+1);

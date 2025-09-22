@@ -1,7 +1,6 @@
 package org.uniroma2.PMCSN.centers;
 
 import org.uniroma2.PMCSN.model.Area;
-import org.uniroma2.PMCSN.model.MsqServer;
 import org.uniroma2.PMCSN.model.MsqSum;
 
 public interface Node {

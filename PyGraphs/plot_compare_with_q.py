@@ -86,21 +86,22 @@ def plot_job_counts(csv_path, out_dir, time_col='Time', jobs_col='ENs'):
     plt.close(fig)
     print(f"– saved: {out_path}")
 
-def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETs', log_scale=False):
+
+def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='ETq', log_scale=False):
     df = pd.read_csv(csv_path)
     df = df.sort_values(by=batch_col)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(df[batch_col], df[response_col], linestyle='-')
 
-    ax.set_title("Andamento ETs Cumulativo per Batch")
+    ax.set_title("Andamento ETq Cumulativo per Batch")
     ax.set_xlabel(batch_col)
     ax.set_ylabel(response_col)
     ax.grid(True)
 
     if log_scale:
         ax.set_yscale('log')
-        ax.set_title("Andamento ETs Cumulativo per Batch (Scala Log)")
+        ax.set_title("Andamento ETq Cumulativo per Batch (Scala Log)")
 
     ax.xaxis.set_major_locator(dynamic_locator(df[batch_col], n_bins=10, min_step=1))
     # Impostiamo min_step=0 per la scala logaritmica
@@ -109,7 +110,7 @@ def plot_infinite_response(csv_path, out_dir, batch_col='Batch', response_col='E
 
     fig.tight_layout()
     suffix = '_log' if log_scale else ''
-    filename = f'infinite_response_times{suffix}.png'
+    filename = f'infinite_queue_times{suffix}.png'
     out_path = os.path.join(out_dir, filename)
     fig.savefig(out_path)
     plt.close(fig)
@@ -149,3 +150,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     print(f"\nTutti i plot sono stati salvati in: {out_dir}")
+

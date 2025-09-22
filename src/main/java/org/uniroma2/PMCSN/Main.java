@@ -1,8 +1,6 @@
 package org.uniroma2.PMCSN;
 
-import org.uniroma2.PMCSN.controller.RideSharingSystem;
-import org.uniroma2.PMCSN.controller.SimpleSystem;
-import org.uniroma2.PMCSN.controller.Sistema;
+import org.uniroma2.PMCSN.controller.*;
 import org.uniroma2.PMCSN.utils.SampleSizeEstimator;
 
 import java.io.*;
@@ -56,39 +54,60 @@ public class Main {
                 preStdNs, preStdNq, preStdRho, preStdLambda
         );
 
-        // 7) Scelta del tipo di sistema
-        System.out.println("---- Choose type of system ----");
-        System.out.println("0 - Simple ");
-        System.out.println("1 - Ride Sharing ");
-        int systemType = getChoice();
+        Scanner input = new Scanner(System.in);
+        try {
+            // 7) Scelta del tipo di sistema
+            System.out.println("---- Choose type of system ----");
+            System.out.println("0 - Simple ");
+            System.out.println("1 - Ride Sharing ");
+            System.out.println("2 - Simple Daily ");
+            System.out.println("3 - Ride Sharing Daily ");
+            int systemType = getChoiceInRange(3, input);
 
-        Sistema system = switch (systemType) {
-            case 0 -> new SimpleSystem();
-            case 1 -> new RideSharingSystem();
-            default -> throw new IllegalStateException("Invalid system choice: " + systemType);
-        };
+            Sistema system = switch (systemType) {
+                case 0 -> new SimpleSystem();
+                case 1 -> new RideSharingSystem();
+                case 2 -> new SimpleDailySystem();
+                case 3 -> new RideSharingDailySystem();
+                default -> throw new IllegalStateException("Invalid system choice: " + systemType);
+            };
 
-        // 8) Scelta del tipo di simulazione
-        System.out.println("---- Choose type of simulation ----");
-        System.out.println("0 - Finite horizon simulation ");
-        System.out.println("1 - Infinite horizon simulation ");
-        int simulationType = getChoice();
+            // Se l'utente ha scelto un sistema "Daily" (2 o 3) esegui subito l'orizzonte finito
+            if (systemType == 2 || systemType == 3) {
+                System.out.println("Starting finite-horizon (24h) simulation for daily system...");
+                system.runFiniteSimulation();
+                return; // termina il main dopo la simulazione
+            }
 
-        switch (simulationType) {
-            case 0 -> system.runFiniteSimulation();
-            case 1 -> system.runInfiniteSimulation();
-            default -> System.out.println("Invalid simulation choice!");
+            // Per i sistemi non-daily chiediamo all'utente quale tipo di simulazione eseguire
+            System.out.println("---- Choose type of simulation ----");
+            System.out.println("0 - Finite horizon simulation ");
+            System.out.println("1 - Infinite horizon simulation ");
+            int simulationType = getChoiceInRange(1, input);
+
+            switch (simulationType) {
+                case 0 -> system.runFiniteSimulation();
+                case 1 -> system.runInfiniteSimulation();
+                default -> System.out.println("Invalid simulation choice!");
+            }
+        } finally {
+            input.close();
         }
     }
 
-    private static int getChoice() {
-        Scanner input = new Scanner(System.in);
-        int choice;
+    /**
+     * Legge un intero da Scanner e lo valida che sia compreso nell'intervallo [min,max].
+     * Ripete il prompt fino a inserimento valido; gestisce ingresso non numerico.
+     */
+    private static int getChoiceInRange(int max, Scanner input) {
         while (true) {
-            System.out.print("Please, make a choice: ");
-            choice = input.nextInt();
-            if (choice == 0 || choice == 1) return choice;
-            System.out.println("Not valid choice!");
+            System.out.printf("Please, make a choice (%d-%d): ", 0, max);
+            String line = input.nextLine().trim();
+            try {
+                int val = Integer.parseInt(line);
+                if (val >= 0 && val <= max) return val;
+            } catch (NumberFormatException ignored) { }
+            System.out.println("Not valid choice! Enter an integer between " + 0 + " and " + max + ".");
         }
     }
 }

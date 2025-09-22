@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RideSharingMultiServerNodeSimple implements Node {
-    private static final int ARRIVO_ESTERNO = 0;
+    private static final int    ARRIVO_ESTERNO = 0;
 
     private final Rngs rng;
     private final MsqTime clock = new MsqTime();
@@ -104,6 +104,7 @@ public class RideSharingMultiServerNodeSimple implements Node {
     @Override
     public int processNextEvent(double t) {
         int eIdx = peekNextEventType();
+
         MsqEvent ev = eventList.get(eIdx);
         clock.next = ev.t;
         clock.current = clock.next;

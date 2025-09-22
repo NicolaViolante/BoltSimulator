@@ -31,6 +31,7 @@ public class RideSharingSystem implements Sistema {
     private static final String BRIGHT_YELLOW = "\u001B[93m";
     private static final String BRIGHT_RED    = "\u001B[91m";
     private static final String BRIGHT_BLUE    = "\u001B[94m";
+
     /*Case Finite*/
     private final int SIMPLE_NODES;
     private final int RIDE_NODES;
@@ -231,7 +232,8 @@ public class RideSharingSystem implements Sistema {
                         rhoReplica = numServers > 0 ? (lambdaReplica * ESReplica) / numServers : 0.0;
                     }
 
-                    // In passato veniva fatto uno special-case su indice 4; ora si usa instanceof
+                    rhoReplica = Math.min(rhoReplica, 1.0);
+
                     lambda[i] = jobsNow / STOP;
                     rho[i] = rhoReplica;
 
